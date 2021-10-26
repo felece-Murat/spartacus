@@ -1,0 +1,5 @@
+<ng-container *ngIf="product$ | async as product">
+  <p class="lead">SKU: {{ product.code }}</p>
+  <p>{{ product.summary }}</p>
+  <p> <cx-icon [type]= "iconTypes.INFO"></cx-icon> Quatitiy: {{ product.stock?.stockLevel }} </p>
+</ng-container>
