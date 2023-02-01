@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export const user = {
   anonymousConsents: {
     preferences: 'Consent Preferences',
@@ -28,5 +34,8 @@ export const user = {
     continue: 'Continue',
     emailIsRequired: 'Invalid email format',
     emailsMustMatch: 'Email does not match',
+  },
+  authMessages: {
+    signedOutSuccessfully: 'You have successfully signed out.',
   },
 };

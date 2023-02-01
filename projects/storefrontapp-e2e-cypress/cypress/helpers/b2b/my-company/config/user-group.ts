@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { FULL_BASE_URL_EN_USD } from '../../../site-context-selector';
 import { randomString } from '../../../user';
 import { INPUT_TYPE, MyCompanyConfig, MY_COMPANY_FEATURE } from '../models';
@@ -68,5 +74,10 @@ export const userGroupConfig: MyCompanyConfig = {
     MY_COMPANY_FEATURE.UPDATE,
     MY_COMPANY_FEATURE.LIST,
     MY_COMPANY_FEATURE.ASSIGNMENTS,
+  ],
+  coreFeatures: [
+    MY_COMPANY_FEATURE.CREATE,
+    MY_COMPANY_FEATURE.UPDATE,
+    MY_COMPANY_FEATURE.LIST,
   ],
 };

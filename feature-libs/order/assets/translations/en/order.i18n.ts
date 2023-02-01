@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export const order = {
   orderDetails: {
     orderId: 'Order #',
@@ -34,6 +40,7 @@ export const order = {
     deliveryStatus_PICKUP_COMPLETE: 'Pickup Complete',
     deliveryStatus_DELIVERY_COMPLETED: 'Delivery Complete',
     deliveryStatus_PAYMENT_NOT_CAPTURED: 'Payment Issue',
+    deliveryStatus_IN_PROCESS: 'In Process',
     deliveryStatus_READY: 'In Process',
     deliveryStatus_DELIVERY_REJECTED: 'Delivery Rejected',
     deliveryStatus_SHIPPED: 'Shipped',
@@ -86,6 +93,8 @@ export const order = {
       setAll: 'Set all quantities to maximum',
       totalPrice: 'Total',
       submit: 'Submit Request',
+      submitDescription:
+        'Submit Request. Items on this page will be included in the cancellation request.',
       returnSuccess: 'Your return request ({{rma}}) was submitted',
       cancelSuccess:
         'Your cancellation request was submitted (original order {{orderCode}} will be updated)',
@@ -98,6 +107,7 @@ export const order = {
       cancelSuccess:
         'Replenishment order #{{replenishmentOrderCode}} has been successfully cancelled',
     },
+    caption: 'Order contents.',
   },
   orderHistory: {
     orderHistory: 'Order history',
@@ -105,15 +115,18 @@ export const order = {
     emptyPurchaseOrderId: 'None',
     date: 'Date',
     status: 'Status',
+    PONumber: 'P.O. Number',
     total: 'Total',
     noOrders: 'We have no order records for this account.',
     noReplenishmentOrders:
       'We have no replenishment order records for this account.',
     startShopping: 'Start Shopping',
     sortBy: 'Sort by',
+    sortOrders: 'Sort orders',
     replenishmentOrderHistory: 'Replenishment Order History',
     replenishmentOrderId: 'Replenishment #',
     purchaseOrderNumber: 'PO #',
+    costCenter: 'Cost Center',
     startOn: 'Start On',
     frequency: 'Frequency',
     nextOrderDate: 'Next Order Date',
@@ -121,12 +134,14 @@ export const order = {
     cancelled: 'Cancelled',
     replenishmentHistory: 'Replenishment History',
     notFound: 'No Orders Found',
+    actions: 'Actions',
   },
   AccountOrderHistoryTabContainer: {
     tabs: {
       AccountOrderHistoryComponent: 'ALL ORDERS ({{param}})',
       OrderReturnRequestListComponent: 'RETURNS ({{param}})',
     },
+    tabPanelContainerRegion: 'Group with order history details',
   },
   returnRequestList: {
     returnRequestId: 'Return #',
@@ -134,6 +149,7 @@ export const order = {
     date: 'Date Created',
     status: 'Status',
     sortBy: 'Sort by',
+    sortReturns: 'Sort returns',
     statusDisplay_APPROVAL_PENDING: 'Approval Pending',
     statusDisplay_CANCELED: 'Cancelled',
     statusDisplay_CANCELLING: 'Cancelling',
@@ -164,5 +180,26 @@ export const order = {
     estimatedRefund: 'Estimated refund',
     note: 'The totals are estimated and may not include applicable taxes or other charges.',
     cancelSuccess: 'Your return request ({{rma}}) was cancelled',
+    caption: 'Order contents.',
+  },
+  reorder: {
+    button: 'Reorder',
+    dialog: {
+      reorderProducts: 'Reorder products',
+      messages: {
+        reviewConfiguration:
+          'An error occurred with "{{ productCode}}" configuration.',
+        lowStock:
+          'Quantity for {{ productName }}: {{ quantity }} has been reduced to {{ quantityAdded }}.',
+        noStock: '{{ productName }} is currently out of stock.',
+        pricingError: 'Pricing problem with "{{ productCode }}".',
+        unresolvableIssues: 'Unrecognized problem with "{{ productCode }}".',
+        success: 'Products have been successfully added to the cart',
+      },
+      areYouSureToReplaceCart:
+        'Current cart will be replaced with new items. Do you wish to continue?',
+      cancel: 'Cancel',
+      continue: 'Continue',
+    },
   },
 };

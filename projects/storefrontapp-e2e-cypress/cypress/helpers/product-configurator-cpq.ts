@@ -1,7 +1,15 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import Chainable = Cypress.Chainable;
 import * as authentication from './auth-forms';
 import * as globalMessage from './global-message';
 import * as configuration from './product-configurator';
+import * as configurationVc from './product-configurator-vc';
+import * as productSearch from './product-search';
 
 /**
  * bundle types
@@ -79,6 +87,7 @@ export function clickOnConfigureBtnInCatalog(): void {
  */
 export function checkConfigPageDisplayed(): void {
   checkSuccessMessageNotDisplayed();
+  configurationVc.checkGhostAnimationNotDisplayed();
   configuration.checkTabBarDisplayed();
   configuration.checkGroupTitleDisplayed();
   configuration.checkGroupFormDisplayed();
@@ -345,4 +354,13 @@ export function waitForProductCardsLoad(expectedLength: number) {
  */
 export function checkSuccessMessageNotDisplayed(): void {
   globalMessage.getSuccessAlert().should('not.exist');
+}
+
+/**
+ * Searches for a product by a product name.
+ *
+ * @param {string} productName - Product name
+ */
+export function searchForProduct(productName: string): void {
+  productSearch.searchForProduct(productName);
 }

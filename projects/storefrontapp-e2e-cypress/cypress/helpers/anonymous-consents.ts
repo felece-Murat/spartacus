@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { giveConsent } from '../helpers/consent-management';
 import { SampleUser } from '../sample-data/checkout-flow';
 import { standardUser } from '../sample-data/shared-users';
@@ -10,7 +16,8 @@ import { LANGUAGE_DE, LANGUAGE_LABEL } from './site-context-selector';
 import { generateMail, randomString } from './user';
 
 export const ANONYMOUS_BANNER = 'cx-anonymous-consent-management-banner';
-const ANONYMOUS_DIALOG = 'cx-anonymous-consent-dialog';
+export const ANONYMOUS_DIALOG = 'cx-anonymous-consent-dialog';
+export const ANONYMOUS_OPEN_DIALOG = 'cx-anonymous-consent-open-dialog';
 const BE_CHECKED = 'be.checked';
 const NOT_BE_CHECKED = 'not.be.checked';
 const BE_DISABLED = 'be.disabled';
@@ -86,7 +93,7 @@ export function navigateToConsentPage() {
 }
 
 export function seeBannerAsAnonymous() {
-  cy.get(ANONYMOUS_BANNER).should('exist');
+  cy.get(`${ANONYMOUS_BANNER} .anonymous-consent-banner`).should('be.visible');
 }
 
 export function checkBannerHidden() {
@@ -243,7 +250,7 @@ export function movingFromAnonymousToRegisteredUser() {
     cy.onMobile(() => {
       clickHamburger();
     });
-    cy.get('cx-login [role="link"]').click();
+    cy.get('cx-login [role="link"]').click({ force: true });
     cy.wait(`@${loginPage}`).its('response.statusCode').should('eq', 200);
 
     login(userTransferConsentTest.email, userTransferConsentTest.password);
@@ -303,8 +310,8 @@ export function showAnonymousConfigTest() {
   it('should not display consents on the consents management page', () => {
     navigateToConsentPage();
     checkConsentsInConsentPage();
-
     signOutUser();
+    seeBannerAsAnonymous();
   });
 
   it('should not display the legal in the dialog', () => {
@@ -331,5 +338,34 @@ export function anonymousConfigTestFlow() {
 
     checkInputConsentState(0, BE_DISABLED);
     checkInputConsentState(3, NOT_EXIST);
+  });
+}
+
+export function testAcceptAnonymousConsents() {
+  it('should accept anonymous consents', () => {
+    cy.visit('/');
+
+    cy.get(ANONYMOUS_BANNER).find('.btn-primary').click();
+    cy.get(ANONYMOUS_BANNER).should('not.be.visible');
+
+    cy.get('cx-anonymous-consent-open-dialog').within(() => {
+      cy.get('button').click({ force: true });
+    });
+
+    cy.get('input[type="checkbox"]').each(($match) => {
+      cy.wrap($match).should('be.checked');
+    });
+
+    cy.get(`${ANONYMOUS_DIALOG} .cx-action-link`)
+      .first()
+      .click({ force: true });
+
+    cy.get(ANONYMOUS_OPEN_DIALOG).within(() => {
+      cy.get('button').click({ force: true });
+    });
+
+    cy.get('input[type="checkbox"]').each(($match) => {
+      cy.wrap($match).should('not.be.checked');
+    });
   });
 }

@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { TabbingOrderConfig, TabbingOrderTypes } from './tabbing-order.model';
 
 export const tabbingOrderConfig: TabbingOrderConfig = {
@@ -175,10 +181,6 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
       type: TabbingOrderTypes.LINK,
     },
     {
-      value: 'Overview',
-      type: TabbingOrderTypes.LINK,
-    },
-    {
       value: 'Basics',
       type: TabbingOrderTypes.BUTTON,
     },
@@ -214,7 +216,22 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
       type: TabbingOrderTypes.LINK,
     },
     {
-      value: 'Configuration',
+      value: 'Overview',
+      type: TabbingOrderTypes.LINK,
+    },
+    {
+      value: 'Resolve Issues',
+      type: TabbingOrderTypes.LINK,
+    },
+    {
+      value: 'Add to Cart',
+      type: TabbingOrderTypes.BUTTON,
+    },
+  ],
+
+  productConfigurationOverviewPost2211: [
+    {
+      value: 'show more',
       type: TabbingOrderTypes.LINK,
     },
     {
@@ -223,6 +240,14 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     },
     {
       value: 'Resolve Issues',
+      type: TabbingOrderTypes.LINK,
+    },
+    {
+      value: 'Menu',
+      type: TabbingOrderTypes.LINK,
+    },
+    {
+      value: 'Filter',
       type: TabbingOrderTypes.LINK,
     },
     {
@@ -453,7 +478,7 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     { value: 'Continue', type: TabbingOrderTypes.BUTTON },
   ],
   deliveryMode: [
-    { value: 'Shipping address', type: TabbingOrderTypes.LINK },
+    { value: 'Delivery address', type: TabbingOrderTypes.LINK },
     { value: 'deliveryModeId', type: TabbingOrderTypes.RADIO },
     { value: 'deliveryModeId', type: TabbingOrderTypes.RADIO },
     { value: 'Back', type: TabbingOrderTypes.BUTTON },
@@ -463,7 +488,7 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     { value: 'Start Shopping', type: TabbingOrderTypes.BUTTON },
   ],
   paymentDetailsCard: [
-    { value: 'Shipping address', type: TabbingOrderTypes.LINK },
+    { value: 'Delivery address', type: TabbingOrderTypes.LINK },
     { value: 'Delivery mode', type: TabbingOrderTypes.LINK },
     { type: TabbingOrderTypes.GENERIC_INPUT },
     {
@@ -479,7 +504,7 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
       type: TabbingOrderTypes.CHECKBOX_WITH_LABEL,
     },
     {
-      value: 'Same as shipping address',
+      value: 'Same as delivery address',
       type: TabbingOrderTypes.CHECKBOX_WITH_LABEL,
     },
     { value: 'Back', type: TabbingOrderTypes.BUTTON },
@@ -672,6 +697,10 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
       type: TabbingOrderTypes.LINK,
     },
     {
+      value: 'Unit-Level Orders',
+      type: TabbingOrderTypes.LINK,
+    },
+    {
       value: 'Wish List',
       type: TabbingOrderTypes.LINK,
     },
@@ -731,11 +760,11 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     },
   ],
   checkoutReviewOrder: [
-    { value: 'Shipping address', type: TabbingOrderTypes.LINK },
+    { value: 'Delivery address', type: TabbingOrderTypes.LINK },
     { value: 'Delivery mode', type: TabbingOrderTypes.LINK },
     { value: 'Payment details', type: TabbingOrderTypes.LINK },
-    { value: 'Edit shipping address', type: TabbingOrderTypes.LINK },
-    { value: 'Edit shipping method', type: TabbingOrderTypes.LINK },
+    { value: 'Edit delivery address', type: TabbingOrderTypes.LINK },
+    { value: 'Edit delivery method', type: TabbingOrderTypes.LINK },
     { value: 'Edit payment method', type: TabbingOrderTypes.LINK },
     {
       value: 'FUN Flash Single Use Camera, 27+12 pic',
@@ -1121,6 +1150,10 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     },
     {
       value: 'Orders',
+      type: TabbingOrderTypes.LINK,
+    },
+    {
+      value: 'Unit-Level Orders',
       type: TabbingOrderTypes.LINK,
     },
     {

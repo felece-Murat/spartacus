@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Directive, EventEmitter, Input, Output } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -15,6 +21,7 @@ export abstract class ConfiguratorAttributeMultiSelectionBaseComponent extends C
 
   @Input() attribute: Configurator.Attribute;
   @Input() ownerKey: string;
+  @Input() expMode: boolean;
   @Output() selectionChange = new EventEmitter<ConfigFormUpdateEvent>();
 
   constructor(protected quantityService: ConfiguratorAttributeQuantityService) {
@@ -28,10 +35,7 @@ export abstract class ConfiguratorAttributeMultiSelectionBaseComponent extends C
    * @return {boolean} - Display quantity picker on attribute level?
    */
   get withQuantityOnAttributeLevel(): boolean {
-    return (
-      this.quantityService?.withQuantityOnAttributeLevel(this.attribute) ??
-      false
-    );
+    return this.quantityService.withQuantityOnAttributeLevel(this.attribute);
   }
 
   /**
@@ -41,11 +45,9 @@ export abstract class ConfiguratorAttributeMultiSelectionBaseComponent extends C
    * @return {boolean} - Display quantity picker?
    */
   get withQuantity(): boolean {
-    return (
-      this.quantityService?.withQuantity(
-        this.attribute?.dataType ?? Configurator.DataType.NOT_IMPLEMENTED,
-        this.attribute?.uiType ?? Configurator.UiType.NOT_IMPLEMENTED
-      ) ?? false
+    return this.quantityService.withQuantity(
+      this.attribute.dataType ?? Configurator.DataType.NOT_IMPLEMENTED,
+      this.attribute.uiType ?? Configurator.UiType.NOT_IMPLEMENTED
     );
   }
 
@@ -55,10 +57,8 @@ export abstract class ConfiguratorAttributeMultiSelectionBaseComponent extends C
    * @return {boolean} - Disable quantity picker?
    */
   get disableQuantityActions(): boolean {
-    return (
-      this.quantityService?.disableQuantityActionsMultiSelection(
-        this.attribute
-      ) ?? true
+    return this.quantityService.disableQuantityActionsMultiSelection(
+      this.attribute
     );
   }
 
@@ -130,9 +130,9 @@ export abstract class ConfiguratorAttributeMultiSelectionBaseComponent extends C
     value: Configurator.Value
   ): ConfiguratorPriceComponentOptions | undefined {
     return {
-      quantity: value?.quantity,
-      price: value?.valuePrice,
-      priceTotal: value?.valuePriceTotal,
+      quantity: value.quantity,
+      price: value.valuePrice,
+      priceTotal: value.valuePriceTotal,
       isLightedUp: value.selected,
     };
   }

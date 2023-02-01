@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Injectable } from '@angular/core';
 import { StateUtils } from '@spartacus/core';
 import { Configurator } from '../../model/configurator.model';
@@ -121,7 +127,7 @@ export class ConfiguratorUtilsService {
       configId.length !== 0 &&
       configuration !== undefined &&
       (configuration.flatGroups.length > 0 ||
-        configuration?.overview !== undefined)
+        configuration.overview !== undefined)
     );
   }
 
@@ -145,7 +151,10 @@ export class ConfiguratorUtilsService {
       configId: configuration.configId,
       groups: [],
       flatGroups: [],
-      interactionState: {},
+      interactionState: {
+        isConflictResolutionMode:
+          configuration.interactionState.isConflictResolutionMode,
+      },
       owner: configuration.owner,
       productCode: configuration.productCode,
       updateType,

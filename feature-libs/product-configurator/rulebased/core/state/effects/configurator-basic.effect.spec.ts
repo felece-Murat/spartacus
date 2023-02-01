@@ -3,6 +3,7 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideMockActions } from '@ngrx/effects/testing';
+import * as ngrxStore from '@ngrx/store';
 import { Store, StoreModule } from '@ngrx/store';
 import { normalizeHttpError } from '@spartacus/core';
 import {
@@ -13,13 +14,10 @@ import { cold, hot } from 'jasmine-marbles';
 import { Observable, of, throwError } from 'rxjs';
 import {
   CONFIG_ID,
-  GROUP_ID_1,
-  GROUP_ID_2,
-  GROUP_ID_3,
-  GROUP_ID_4,
-  GROUP_ID_5,
-  GROUP_ID_6,
-  GROUP_ID_7,
+  GROUP_ID_CONFLICT_HEADER,
+  GROUP_ID_CONFLICT_1,
+  GROUP_ID_CONFLICT_2,
+  ATTRIBUTE_1_CHECKBOX,
 } from '../../../testing/configurator-test-data';
 import { ConfiguratorTestUtils } from '../../../testing/configurator-test-utils';
 import { RulebasedConfiguratorConnector } from '../../connectors/rulebased-configurator.connector';
@@ -35,7 +33,9 @@ import * as fromEffects from './configurator-basic.effect';
 
 const productCode = 'CONF_LAPTOP';
 const configId = '1234-56-7890';
+const CONFIG_ID_TEMPLATE = '1234-56-abcd';
 const groupId = 'GROUP-1';
+const parentGroupid = 'GROUP-PARENT';
 const groupIdA = 'a';
 
 const errorResponse: HttpErrorResponse = new HttpErrorResponse({
@@ -66,6 +66,21 @@ const groupWithSubGroup: Configurator.Group = {
   ],
   subGroups: [group],
 };
+
+const conflictGroup: Configurator.Group = {
+  id: GROUP_ID_CONFLICT_HEADER,
+  groupType: Configurator.GroupType.CONFLICT_HEADER_GROUP,
+  attributes: [],
+  subGroups: [
+    {
+      id: GROUP_ID_CONFLICT_1,
+      groupType: Configurator.GroupType.CONFLICT_GROUP,
+      attributes: [{ name: ATTRIBUTE_1_CHECKBOX }],
+      subGroups: [],
+    },
+  ],
+};
+
 const productConfiguration: Configurator.Configuration = {
   ...ConfiguratorTestUtils.createConfiguration('a', owner),
   productCode: productCode,
@@ -73,6 +88,7 @@ const productConfiguration: Configurator.Configuration = {
   consistent: true,
   overview: {
     configId: CONFIG_ID,
+    productCode: productCode,
     groups: [
       {
         id: groupIdA,
@@ -90,8 +106,57 @@ const productConfiguration: Configurator.Configuration = {
   flatGroups: [group],
   priceSummary: {},
   priceSupplements: [],
+  pricingEnabled: true,
+  interactionState: { isConflictResolutionMode: undefined },
+};
+
+const productConfigurationWithConflict: Configurator.Configuration = {
+  ...ConfiguratorTestUtils.createConfiguration('a', owner),
+  productCode: productCode,
+  complete: true,
+  consistent: false,
+  overview: {
+    configId: CONFIG_ID,
+    productCode: productCode,
+    groups: [
+      {
+        id: groupIdA,
+        groupDescription: 'a',
+        attributes: [
+          {
+            attribute: 'a',
+            value: 'A',
+          },
+        ],
+      },
+    ],
+  },
+  groups: [conflictGroup, group, groupWithSubGroup],
+  flatGroups: [conflictGroup, group],
+  priceSummary: {},
+  priceSupplements: [],
+  pricingEnabled: true,
+  interactionState: { isConflictResolutionMode: true },
+};
+
+const productConfigurationWithoutPricing: Configurator.Configuration = {
+  ...ConfiguratorTestUtils.createConfiguration('a', owner),
+  pricingEnabled: false,
 };
 ConfiguratorTestUtils.freezeProductConfiguration(productConfiguration);
+
+const parentGroup: Configurator.Group = {
+  id: parentGroupid,
+  subGroups: [group],
+};
+const productConfigurationAttributeOnNestedGroup: Configurator.Configuration = {
+  ...ConfiguratorTestUtils.createConfiguration('a', owner),
+  groups: [parentGroup],
+  flatGroups: [parentGroup],
+};
+const searchVariantsAction = new ConfiguratorActions.SearchVariants(
+  productConfiguration
+);
 
 describe('ConfiguratorEffect', () => {
   let createMock: jasmine.Spy;
@@ -99,6 +164,7 @@ describe('ConfiguratorEffect', () => {
   let updateConfigurationMock: jasmine.Spy;
   let readPriceSummaryMock: jasmine.Spy;
   let overviewMock: jasmine.Spy;
+  let updateOverviewMock: jasmine.Spy;
   let configEffects: fromEffects.ConfiguratorBasicEffects;
 
   let store: Store<StateWithConfigurator>;
@@ -117,6 +183,9 @@ describe('ConfiguratorEffect', () => {
     overviewMock = jasmine
       .createSpy()
       .and.returnValue(of(productConfiguration.overview));
+    updateOverviewMock = jasmine
+      .createSpy()
+      .and.returnValue(of(productConfiguration.overview));
 
     class MockConnector {
       createConfiguration = createMock;
@@ -124,6 +193,7 @@ describe('ConfiguratorEffect', () => {
       updateConfiguration = updateConfigurationMock;
       readPriceSummary = readPriceSummaryMock;
       getConfigurationOverview = overviewMock;
+      updateConfigurationOverview = updateOverviewMock;
     }
 
     TestBed.configureTestingModule({
@@ -157,45 +227,76 @@ describe('ConfiguratorEffect', () => {
     expect(configEffects).toBeTruthy();
   });
 
-  it('should emit a success action with content for an action of type createConfiguration', () => {
-    const action = new ConfiguratorActions.CreateConfiguration(
-      productConfiguration.owner
-    );
+  describe('Effect createConfiguration', () => {
+    it('should emit a success action with content', () => {
+      const action = new ConfiguratorActions.CreateConfiguration({
+        owner: productConfiguration.owner,
+      });
 
-    const completion = new ConfiguratorActions.CreateConfigurationSuccess(
-      productConfiguration
-    );
-    actions$ = hot('-a', { a: action });
-    const expected = cold('-b', { b: completion });
+      const configurationSuccessAction =
+        new ConfiguratorActions.CreateConfigurationSuccess(
+          productConfiguration
+        );
 
-    expect(configEffects.createConfiguration$).toBeObservable(expected);
-  });
+      actions$ = hot('-a', { a: action });
+      const expected = cold('-(bc)', {
+        b: configurationSuccessAction,
+        c: searchVariantsAction,
+      });
 
-  it('must not emit anything in case source action is not covered, createConfiguration', () => {
-    const actionNotCovered = new ConfiguratorActions.CreateConfigurationSuccess(
-      productConfiguration
-    );
-    actions$ = hot('-a', { a: actionNotCovered });
-    const expected = cold('-');
-
-    expect(configEffects.createConfiguration$).toBeObservable(expected);
-  });
-
-  it('should emit a fail action in case something goes wrong', () => {
-    createMock.and.returnValue(throwError(errorResponse));
-
-    const action = new ConfiguratorActions.CreateConfiguration(
-      productConfiguration.owner
-    );
-
-    const completionFailure = new ConfiguratorActions.CreateConfigurationFail({
-      ownerKey: productConfiguration.owner.key,
-      error: normalizeHttpError(errorResponse),
+      expect(configEffects.createConfiguration$).toBeObservable(expected);
     });
-    actions$ = hot('-a', { a: action });
-    const expected = cold('-b', { b: completionFailure });
 
-    expect(configEffects.createConfiguration$).toBeObservable(expected);
+    it('should forward configuration template ID', () => {
+      const action = new ConfiguratorActions.CreateConfiguration({
+        owner: productConfiguration.owner,
+        configIdTemplate: CONFIG_ID_TEMPLATE,
+      });
+
+      const configurationSuccessAction =
+        new ConfiguratorActions.CreateConfigurationSuccess(
+          productConfiguration
+        );
+
+      actions$ = hot('-a', { a: action });
+      const expected = cold('-(bc)', {
+        b: configurationSuccessAction,
+        c: searchVariantsAction,
+      });
+
+      expect(configEffects.createConfiguration$).toBeObservable(expected);
+      expect(createMock).toHaveBeenCalledWith(owner, CONFIG_ID_TEMPLATE);
+    });
+
+    it('must not emit anything in case source action is not covered', () => {
+      const actionNotCovered =
+        new ConfiguratorActions.CreateConfigurationSuccess(
+          productConfiguration
+        );
+      actions$ = hot('-a', { a: actionNotCovered });
+      const expected = cold('-');
+
+      expect(configEffects.createConfiguration$).toBeObservable(expected);
+    });
+
+    it('should emit a fail action in case something goes wrong', () => {
+      createMock.and.returnValue(throwError(errorResponse));
+
+      const action = new ConfiguratorActions.CreateConfiguration({
+        owner: productConfiguration.owner,
+      });
+
+      const completionFailure = new ConfiguratorActions.CreateConfigurationFail(
+        {
+          ownerKey: productConfiguration.owner.key,
+          error: normalizeHttpError(errorResponse),
+        }
+      );
+      actions$ = hot('-a', { a: action });
+      const expected = cold('-b', { b: completionFailure });
+
+      expect(configEffects.createConfiguration$).toBeObservable(expected);
+    });
   });
 
   describe('Effect readConfiguration', () => {
@@ -260,7 +361,10 @@ describe('ConfiguratorEffect', () => {
       const overviewSuccessAction =
         new ConfiguratorActions.GetConfigurationOverviewSuccess({
           ownerKey: owner.key,
-          overview: productConfiguration.overview ?? { configId: CONFIG_ID },
+          overview: productConfiguration.overview ?? {
+            configId: CONFIG_ID,
+            productCode: productCode,
+          },
         });
       actions$ = hot('-a', { a: action });
       const expected = cold('-b', { b: overviewSuccessAction });
@@ -282,6 +386,48 @@ describe('ConfiguratorEffect', () => {
       const expected = cold('-b', { b: failAction });
 
       expect(configEffects.getOverview$).toBeObservable(expected);
+    });
+  });
+
+  describe('Effect updateOverview', () => {
+    it('should emit a success action with content in case connector call goes well', () => {
+      const payloadInput: Configurator.Configuration = {
+        ...ConfiguratorTestUtils.createConfiguration(configId, owner),
+      };
+      const action = new ConfiguratorActions.UpdateConfigurationOverview(
+        payloadInput
+      );
+
+      const overviewSuccessAction =
+        new ConfiguratorActions.UpdateConfigurationOverviewSuccess({
+          ownerKey: owner.key,
+          overview: productConfiguration.overview ?? {
+            configId: CONFIG_ID,
+            productCode: productCode,
+          },
+        });
+      actions$ = hot('-a', { a: action });
+      const expected = cold('-b', { b: overviewSuccessAction });
+
+      expect(configEffects.updateOverview$).toBeObservable(expected);
+    });
+
+    it('should emit a fail action in case something goes wrong', () => {
+      updateOverviewMock.and.returnValue(throwError(errorResponse));
+      const overviewAction =
+        new ConfiguratorActions.UpdateConfigurationOverview(
+          productConfiguration
+        );
+
+      const failAction =
+        new ConfiguratorActions.UpdateConfigurationOverviewFail({
+          ownerKey: productConfiguration.owner.key,
+          error: normalizeHttpError(errorResponse),
+        });
+      actions$ = hot('-a', { a: overviewAction });
+      const expected = cold('-b', { b: failAction });
+
+      expect(configEffects.updateOverview$).toBeObservable(expected);
     });
   });
 
@@ -353,6 +499,18 @@ describe('ConfiguratorEffect', () => {
 
       expect(configEffects.updatePriceSummary$).toBeObservable(expected);
     });
+
+    it('should do nothing in case pricing is not enabled', () => {
+      const updatePriceSummaryAction =
+        new ConfiguratorActions.UpdatePriceSummary(
+          productConfigurationWithoutPricing
+        );
+
+      actions$ = hot('-a', { a: updatePriceSummaryAction });
+      const expected = cold('--');
+
+      expect(configEffects.updatePriceSummary$).toBeObservable(expected);
+    });
   });
 
   describe('Effect updateConfigurationSuccess', () => {
@@ -369,6 +527,7 @@ describe('ConfiguratorEffect', () => {
         ...productConfiguration,
         interactionState: { currentGroup: groupId },
       });
+
       const changeGroup = new ConfiguratorActions.ChangeGroup({
         configuration: productConfiguration,
         groupId: groupId,
@@ -376,10 +535,123 @@ describe('ConfiguratorEffect', () => {
       });
 
       actions$ = hot('-a', { a: action });
-      const expected = cold('-(bcd)', {
+      const expected = cold('-(bcde)', {
         b: finalizeSuccess,
         c: updatePrices,
-        d: changeGroup,
+        d: searchVariantsAction,
+        e: changeGroup,
+      });
+      expect(configEffects.updateConfigurationSuccess$).toBeObservable(
+        expected
+      );
+    });
+
+    it('should raise UpdateConfigurationFinalize, UpdatePrices and ChangeGroup with group id of attribute group in case conflicts exist but conflict resolution mode is not active', () => {
+      const payloadInput: Configurator.Configuration = {
+        ...productConfigurationWithConflict,
+        interactionState: { isConflictResolutionMode: false },
+      };
+      const action = new ConfiguratorActions.UpdateConfigurationSuccess(
+        payloadInput
+      );
+      const finalizeSuccess =
+        new ConfiguratorActions.UpdateConfigurationFinalizeSuccess(
+          payloadInput
+        );
+      const updatePrices = new ConfiguratorActions.UpdatePriceSummary({
+        ...productConfigurationWithConflict,
+        interactionState: { currentGroup: groupId },
+      });
+      const searchVariantsAction = new ConfiguratorActions.SearchVariants(
+        payloadInput
+      );
+      const changeGroup = new ConfiguratorActions.ChangeGroup({
+        configuration: payloadInput,
+        groupId: groupId,
+        parentGroupId: undefined,
+      });
+
+      actions$ = hot('-a', { a: action });
+      const expected = cold('-(bcde)', {
+        b: finalizeSuccess,
+        c: updatePrices,
+        d: searchVariantsAction,
+        e: changeGroup,
+      });
+      expect(configEffects.updateConfigurationSuccess$).toBeObservable(
+        expected
+      );
+    });
+
+    it('should raise UpdateConfigurationFinalize, UpdatePrices and ChangeGroup with group id of conflict group in case conflicts exist but current group is a conflict group', () => {
+      store.dispatch(
+        new ConfiguratorActions.SetCurrentGroup({
+          entityKey: productConfiguration.owner.key,
+          currentGroup: GROUP_ID_CONFLICT_2,
+        })
+      );
+      const payloadInput = productConfigurationWithConflict;
+      const action = new ConfiguratorActions.UpdateConfigurationSuccess(
+        payloadInput
+      );
+      const finalizeSuccess =
+        new ConfiguratorActions.UpdateConfigurationFinalizeSuccess(
+          productConfigurationWithConflict
+        );
+      const updatePrices = new ConfiguratorActions.UpdatePriceSummary({
+        ...productConfigurationWithConflict,
+        interactionState: { currentGroup: GROUP_ID_CONFLICT_1 },
+      });
+      const searchVariantsAction = new ConfiguratorActions.SearchVariants(
+        productConfigurationWithConflict
+      );
+      const changeGroup = new ConfiguratorActions.ChangeGroup({
+        configuration: productConfigurationWithConflict,
+        groupId: GROUP_ID_CONFLICT_1,
+        parentGroupId: GROUP_ID_CONFLICT_HEADER,
+      });
+
+      actions$ = hot('-a', { a: action });
+      const expected = cold('-(bcde)', {
+        b: finalizeSuccess,
+        c: updatePrices,
+        d: searchVariantsAction,
+        e: changeGroup,
+      });
+      expect(configEffects.updateConfigurationSuccess$).toBeObservable(
+        expected
+      );
+    });
+
+    it('should cover deeply nested updates properly', () => {
+      const payloadInput = productConfigurationAttributeOnNestedGroup;
+      const action = new ConfiguratorActions.UpdateConfigurationSuccess(
+        payloadInput
+      );
+      const finalizeSuccess =
+        new ConfiguratorActions.UpdateConfigurationFinalizeSuccess(
+          productConfigurationAttributeOnNestedGroup
+        );
+      const updatePrices = new ConfiguratorActions.UpdatePriceSummary({
+        ...productConfigurationAttributeOnNestedGroup,
+        interactionState: { currentGroup: groupId },
+      });
+      const searchVariantsActionAttributeOnNestedGroup =
+        new ConfiguratorActions.SearchVariants(
+          productConfigurationAttributeOnNestedGroup
+        );
+      const changeGroup = new ConfiguratorActions.ChangeGroup({
+        configuration: productConfigurationAttributeOnNestedGroup,
+        groupId: groupId,
+        parentGroupId: parentGroupid,
+      });
+
+      actions$ = hot('-a', { a: action });
+      const expected = cold('-(bcde)', {
+        b: finalizeSuccess,
+        c: updatePrices,
+        d: searchVariantsActionAttributeOnNestedGroup,
+        e: changeGroup,
       });
       expect(configEffects.updateConfigurationSuccess$).toBeObservable(
         expected
@@ -407,9 +679,10 @@ describe('ConfiguratorEffect', () => {
       });
 
       actions$ = hot('-a', { a: action });
-      const expected = cold('-(bc)', {
+      const expected = cold('-(bcd)', {
         b: finalizeSuccess,
         c: updatePrices,
+        d: searchVariantsAction,
       });
       expect(configEffects.updateConfigurationSuccess$).toBeObservable(
         expected
@@ -463,7 +736,7 @@ describe('ConfiguratorEffect', () => {
     });
   });
   describe('Effect groupChange', () => {
-    it('should emit ReadConfigurationSuccess and SetCurrentGroup/SetParentGroup on ChangeGroup in case no changes are pending', () => {
+    it('should emit UpdatePriceSummary, ReadConfigurationSuccess and SetCurrentGroup/SetParentGroup on ChangeGroup in case no changes are pending', () => {
       const payloadInput: Configurator.Configuration = {
         ...ConfiguratorTestUtils.createConfiguration(configId, owner),
         productCode: productCode,
@@ -483,13 +756,18 @@ describe('ConfiguratorEffect', () => {
         entityKey: productConfiguration.owner.key,
         menuParentGroup: undefined,
       });
+      const updatePriceSummary = new ConfiguratorActions.UpdatePriceSummary({
+        ...productConfiguration,
+        interactionState: { currentGroup: groupId },
+      });
 
       actions$ = hot('-a', { a: action });
 
-      const expected = cold('-(bcd)', {
+      const expected = cold('-(bcde)', {
         b: setCurrentGroup,
         c: setMenuParentGroup,
         d: readConfigurationSuccess,
+        e: updatePriceSummary,
       });
       expect(configEffects.groupChange$).toBeObservable(expected);
     });
@@ -520,98 +798,43 @@ describe('ConfiguratorEffect', () => {
     });
   });
 
-  describe('getGroupWithAttributes', () => {
-    it('should find group in multi level config', () => {
-      const groups: Configurator.Group[] = [
-        {
-          id: GROUP_ID_1,
-          attributes: [],
-          subGroups: [
-            {
-              id: GROUP_ID_2,
-              attributes: [],
-              subGroups: [],
-            },
-            {
-              id: GROUP_ID_3,
-              attributes: [],
-              subGroups: [],
-            },
-          ],
-        },
-        {
-          id: GROUP_ID_4,
-          attributes: [],
-          subGroups: productConfiguration.groups,
-        },
-        {
-          id: GROUP_ID_5,
-          attributes: [],
-          subGroups: [
-            {
-              id: GROUP_ID_6,
-              attributes: [],
-              subGroups: [],
-            },
-          ],
-        },
-      ];
-      expect(configEffects.getGroupWithAttributes(groups)).toBe(groupId);
+  describe('Effect removeProductBoundConfigurations', () => {
+    let entitiesInConfigurationState: {
+      [id: string]: any;
+    } = {};
+    let configurationState: any;
+
+    beforeEach(() => {
+      entitiesInConfigurationState = {};
+      configurationState = {
+        configurations: { entities: entitiesInConfigurationState },
+      };
     });
 
-    it('should find no group in multi level config in case no attributes exist at all', () => {
-      const groups: Configurator.Group[] = [
-        {
-          id: GROUP_ID_1,
-          attributes: [],
-          subGroups: [
-            {
-              id: GROUP_ID_2,
-              attributes: [],
-              subGroups: [],
-            },
-            {
-              id: GROUP_ID_3,
-              attributes: [],
-              subGroups: [],
-            },
-          ],
-        },
-        {
-          id: GROUP_ID_5,
-          attributes: [],
-          subGroups: [{ id: GROUP_ID_4, attributes: [], subGroups: [] }],
-        },
-        {
-          id: GROUP_ID_6,
-          attributes: [],
-          subGroups: [
-            {
-              id: GROUP_ID_7,
-              attributes: [],
-              subGroups: [],
-            },
-          ],
-        },
-      ];
-      expect(configEffects.getGroupWithAttributes(groups)).toBeUndefined();
-    });
-  });
+    it('should emit remove configuration action for configurations that are purely product bound', () => {
+      spyOnProperty(ngrxStore, 'select').and.returnValue(
+        () => () => of(configurationState)
+      );
 
-  describe('getGroupWithAttributesForConfiguration', () => {
-    it('should find group in single level config', () => {
-      expect(
-        configEffects.getGroupWithAttributesForConfiguration(
-          productConfiguration
-        )
-      ).toBe(groupId);
-    });
-    it('should throw error in case configuration has no attribute at all', () => {
-      expect(function () {
-        configEffects.getGroupWithAttributesForConfiguration(
-          ConfiguratorTestUtils.createConfiguration('a', owner)
-        );
-      }).toThrow();
+      entitiesInConfigurationState[productConfiguration.owner.key] =
+        productConfiguration.owner.key;
+
+      const removeProductBoundConfigurationsAction =
+        new ConfiguratorActions.RemoveProductBoundConfigurations();
+
+      const removeConfigurationAction =
+        new ConfiguratorActions.RemoveConfiguration({
+          ownerKey: [productConfiguration.owner.key],
+        });
+
+      actions$ = cold('-a', { a: removeProductBoundConfigurationsAction });
+      const expected = cold('-(b)', {
+        b: removeConfigurationAction,
+      });
+
+      expect(configEffects.removeProductBoundConfigurations$).toBeObservable(
+        expected
+      );
     });
   });
 });

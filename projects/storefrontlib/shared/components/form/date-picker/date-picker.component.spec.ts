@@ -1,8 +1,7 @@
 import { Component, DebugElement, Input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { UntypedFormControl, ReactiveFormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
-import { RouterTestingModule } from '@angular/router/testing';
 import { I18nTestingModule } from '@spartacus/core';
 import { DatePickerComponent } from './date-picker.component';
 
@@ -10,7 +9,7 @@ import { DatePickerComponent } from './date-picker.component';
   selector: 'cx-form-errors',
 })
 class MockFormErrorComponent {
-  @Input() control: FormControl;
+  @Input() control: UntypedFormControl;
   @Input() translationParams: any;
 }
 
@@ -23,12 +22,12 @@ describe('DatePickerComponent', () => {
   let component: DatePickerComponent;
   let fixture: ComponentFixture<DatePickerComponent>;
 
-  let control: FormControl;
+  let control: UntypedFormControl;
   let inputEl: DebugElement;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [RouterTestingModule, I18nTestingModule, ReactiveFormsModule],
+      imports: [I18nTestingModule, ReactiveFormsModule],
       declarations: [DatePickerComponent, MockFormErrorComponent],
     }).compileComponents();
   });
@@ -37,7 +36,7 @@ describe('DatePickerComponent', () => {
     fixture = TestBed.createComponent(DatePickerComponent);
     component = fixture.componentInstance;
 
-    control = new FormControl('min');
+    control = new UntypedFormControl('min');
 
     component.control = control;
     fixture.detectChanges();
@@ -81,7 +80,7 @@ describe('DatePickerComponent', () => {
 
   describe('validates input date', () => {
     it('should not return invalid date', () => {
-      expect(component.getDate('2020-12')).toBeNull();
+      expect(component.getDate('2020-12')).toBeUndefined();
     });
     it('should not return invalid date', () => {
       expect(component.getDate('2020-12-2')).toEqual('2020-12-2');

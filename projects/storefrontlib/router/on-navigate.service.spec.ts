@@ -36,6 +36,7 @@ class MockRouter implements Partial<Router> {
 
 class MockViewPortScroller implements Partial<ViewportScroller> {
   scrollToPosition(_position: [number, number]): void {}
+  setHistoryScrollRestoration(_scrollRestoration: 'auto' | 'manual'): void {}
 }
 
 function emitPairScrollEvent(
@@ -108,13 +109,15 @@ describe('OnNavigateService', () => {
   });
 
   describe('setResetViewOnNavigate()', () => {
-    it('should scroll to the top on navigation when no position (forward navigation)', () => {
+    it('should scroll to the top on navigation when no position (forward navigation)', fakeAsync(() => {
       service.setResetViewOnNavigate(true);
 
       emitPairScrollEvent(null);
 
+      tick(100);
+
       expect(viewportScroller.scrollToPosition).toHaveBeenCalledWith([0, 0]);
-    });
+    }));
 
     it('should NOT scroll to the top on navigation when route has query strings', () => {
       config.enableResetViewOnNavigate.ignoreQueryString = true;
@@ -140,21 +143,24 @@ describe('OnNavigateService', () => {
       ]);
     });
 
-    it('should scroll to the top on navigation when route is not part of the ignored config routes', () => {
+    it('should scroll to the top on navigation when route is not part of the ignored config routes', fakeAsync(() => {
       config.enableResetViewOnNavigate.ignoreRoutes = ['test1', 'test2'];
 
       service.setResetViewOnNavigate(true);
 
       emitPairScrollEvent(null, '/test3');
+
+      tick(100);
+
       expect(viewportScroller.scrollToPosition).toHaveBeenCalledWith([0, 0]);
-    });
+    }));
 
     it('should scroll to a position on navigation when scroll contains position (backward navigation)', fakeAsync(() => {
       service.setResetViewOnNavigate(true);
 
       emitPairScrollEvent([1000, 500]);
 
-      tick();
+      tick(100);
 
       expect(viewportScroller.scrollToPosition).toHaveBeenCalledWith([
         1000, 500,

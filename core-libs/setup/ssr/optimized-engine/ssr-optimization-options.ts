@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Request } from 'express';
 
 export interface SsrOptimizationOptions {
@@ -40,7 +46,7 @@ export interface SsrOptimizationOptions {
 
   /**
    * Allows overriding default key generator for custom differentiating
-   * between rendered pages. By default it uses req.originalUrl
+   * between rendered pages. By default it uses the full request URL.
    *
    * @param req
    */
@@ -55,7 +61,7 @@ export interface SsrOptimizationOptions {
 
   /**
    * Time in milliseconds to wait for rendering when SSR_ALWAYS render strategy is set for the request.
-   * Default value is 60 seconds.
+   * Default value is 60000 milliseconds (1 minute).
    */
   forcedSsrTimeout?: number;
 

@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export interface TranslationChunksConfig {
   [chunk: string]: string[];
 }
@@ -16,17 +22,25 @@ export const translationChunksConfig: TranslationChunksConfig = {
     'formErrors',
     'errorHandlers',
     'carousel',
+    'assistiveMessage',
+    'passwordVisibility',
+    'generalErrors',
+    'chatMessaging',
   ],
-  cart: [
-    'cartDetails',
-    'cartItems',
-    'orderCost',
-    'voucher',
-    'wishList',
-    'saveForLaterItems',
+  address: [
+    'addressForm',
+    'addressBook',
+    'addressCard',
+    'addressSuggestion',
+    'addressMessages',
   ],
-  address: ['addressForm', 'addressBook', 'addressCard', 'addressSuggestion'],
-  payment: ['paymentForm', 'paymentMethods', 'paymentCard', 'paymentTypes'],
+  payment: [
+    'paymentForm',
+    'paymentMethods',
+    'paymentCard',
+    'paymentTypes',
+    'paymentMessages',
+  ],
   myAccount: [
     'orderDetails',
     'orderHistory',
@@ -35,7 +49,6 @@ export const translationChunksConfig: TranslationChunksConfig = {
     'updateProfileForm',
     'consentManagementForm',
     'myCoupons',
-    'wishlist',
     'notificationPreference',
     'myInterests',
     'AccountOrderHistoryTabContainer',
@@ -47,6 +60,7 @@ export const translationChunksConfig: TranslationChunksConfig = {
     'productDetails',
     'productList',
     'productFacetNavigation',
+    'productCarousel',
     'productSummary',
     'productReview',
     'addToCart',
@@ -57,5 +71,6 @@ export const translationChunksConfig: TranslationChunksConfig = {
     'itemCounter',
     'productView',
   ],
-  user: ['anonymousConsents', 'loginRegister', 'checkoutLogin'],
+  user: ['anonymousConsents', 'loginRegister', 'checkoutLogin', 'authMessages'],
+  video: ['player'],
 };

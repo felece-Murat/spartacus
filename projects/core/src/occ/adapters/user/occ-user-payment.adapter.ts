@@ -1,9 +1,15 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { PAYMENT_DETAILS_NORMALIZER } from '../../../checkout/connectors/payment/converters';
-import { PaymentDetails } from '../../../model/cart.model';
+import { PaymentDetails } from '../../../model/payment.model';
 import { UserPaymentAdapter } from '../../../user/connectors/payment/user-payment.adapter';
 import { ConverterService } from '../../../util/converter.service';
 import { Occ } from '../../occ-models/occ.models';
@@ -28,7 +34,7 @@ export class OccUserPaymentAdapter implements UserPaymentAdapter {
 
     return this.http.get<Occ.PaymentDetailsList>(url, { headers }).pipe(
       catchError((error: any) => throwError(error)),
-      map((methodList) => methodList.payments),
+      map((methodList) => methodList.payments ?? []),
       this.converter.pipeableMany(PAYMENT_DETAILS_NORMALIZER)
     );
   }

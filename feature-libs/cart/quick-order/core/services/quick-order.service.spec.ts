@@ -1,14 +1,16 @@
 import { AbstractType } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import {
+  ActiveCartFacade,
+  CartAddEntrySuccessEvent,
+  OrderEntry,
+} from '@spartacus/cart/base/root';
 import { defaultQuickOrderConfig } from '@spartacus/cart/quick-order/root';
 import {
-  ActiveCartService,
-  CartAddEntrySuccessEvent,
   EventService,
-  OrderEntry,
+  FeatureConfigService,
   Product,
-  ProductAdapter,
-  ProductSearchAdapter,
+  ProductSearchConnector,
   ProductSearchPage,
   SearchConfig,
 } from '@spartacus/core';
@@ -18,6 +20,7 @@ import { QuickOrderService } from './quick-order.service';
 
 const mockProduct1Code: string = 'mockCode1';
 const mockProduct2Code: string = 'mockCode2';
+const mockProduct3Code: string = 'mockCode3';
 const mockProduct1: Product = {
   code: mockProduct1Code,
   price: {
@@ -73,13 +76,7 @@ const mockProductSearchPage: ProductSearchPage = {
   products: [mockProduct1, mockProduct2],
 };
 
-class MockProductAdapter implements Partial<ProductAdapter> {
-  load(_productCode: any, _scope?: string): Observable<Product> {
-    return of(mockProduct1);
-  }
-}
-
-class MockProductSearchAdapter implements Partial<ProductSearchAdapter> {
+class MockProductSearchConnector implements Partial<ProductSearchConnector> {
   search(
     _query: string,
     _searchConfig?: SearchConfig
@@ -88,7 +85,7 @@ class MockProductSearchAdapter implements Partial<ProductSearchAdapter> {
   }
 }
 
-class MockActiveCartService implements Partial<ActiveCartService> {
+class MockActiveCartService implements Partial<ActiveCartFacade> {
   isStable(): Observable<boolean> {
     return of(true);
   }
@@ -104,38 +101,51 @@ class MockEventService implements Partial<EventService> {
   }
 }
 
+/**
+ * TODO: (#CXSPA-612) Remove MockFeatureConfigService in 6.0
+ */
+class MockFeatureConfigService implements Partial<FeatureConfigService> {
+  isLevel(_version: string): boolean {
+    return true;
+  }
+}
+
 describe('QuickOrderService', () => {
   let service: QuickOrderService;
-  let productAdapter: ProductAdapter;
-  let productSearchAdapter: ProductSearchAdapter;
-  let activeCartService: ActiveCartService;
+  let productSearchConnector: ProductSearchConnector;
+  let activeCartService: ActiveCartFacade;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
         QuickOrderService,
-        ProductAdapter,
         {
-          provide: ActiveCartService,
+          provide: ActiveCartFacade,
           useClass: MockActiveCartService,
         },
         {
           provide: EventService,
           useClass: MockEventService,
         },
-        { provide: ProductAdapter, useClass: MockProductAdapter },
-        { provide: ProductSearchAdapter, useClass: MockProductSearchAdapter },
+        {
+          provide: ProductSearchConnector,
+          useClass: MockProductSearchConnector,
+        },
+        {
+          provide: FeatureConfigService,
+          useClass: MockFeatureConfigService,
+        },
       ],
     });
 
     service = TestBed.inject(QuickOrderService);
-    productAdapter = TestBed.inject(ProductAdapter);
-    productSearchAdapter = TestBed.inject(ProductSearchAdapter);
-    activeCartService = TestBed.inject(ActiveCartService);
+    productSearchConnector = TestBed.inject(ProductSearchConnector);
+    activeCartService = TestBed.inject(ActiveCartFacade);
   });
 
   beforeEach(() => {
     service.clearList();
+    service.setListLimit(10);
   });
 
   it('should be created', () => {
@@ -182,16 +192,9 @@ describe('QuickOrderService', () => {
       });
   });
 
-  it('should trigger search', () => {
-    spyOn(productAdapter, 'load');
-
-    service.search(mockProduct1Code);
-    expect(productAdapter.load).toHaveBeenCalledWith(mockProduct1Code);
-  });
-
   describe('should trigger search products', () => {
     beforeEach(() => {
-      spyOn(productSearchAdapter, 'search').and.returnValue(
+      spyOn(productSearchConnector, 'search').and.returnValue(
         of(mockProductSearchPage)
       );
     });
@@ -201,7 +204,7 @@ describe('QuickOrderService', () => {
         .searchProducts(mockProduct1Code, mockMaxProducts)
         .pipe(take(1))
         .subscribe(() => {
-          expect(productSearchAdapter.search).toHaveBeenCalledWith(
+          expect(productSearchConnector.search).toHaveBeenCalledWith(
             mockProduct1Code,
             mockSearchConfig
           );
@@ -214,7 +217,7 @@ describe('QuickOrderService', () => {
         .searchProducts(mockProduct1Code)
         .pipe(take(1))
         .subscribe(() => {
-          expect(productSearchAdapter.search).toHaveBeenCalledWith(
+          expect(productSearchConnector.search).toHaveBeenCalledWith(
             mockProduct1Code,
             mockDefaultSearchConfig
           );
@@ -336,19 +339,7 @@ describe('QuickOrderService', () => {
       });
   });
 
-  it('should set added product', (done) => {
-    service.setProductAdded(mockProduct1Code);
-
-    service
-      .getProductAdded()
-      .pipe(take(1))
-      .subscribe((result) => {
-        expect(result).toEqual(mockProduct1Code);
-      });
-    done();
-  });
-
-  it('should add deleted entry and after 5s delete it', (done) => {
+  it('should add deleted entry and after 7s delete it', (done) => {
     service.loadEntries(mockEntries);
     service.softDeleteEntry(0);
 
@@ -358,7 +349,7 @@ describe('QuickOrderService', () => {
         tap((softDeletedEntries) => {
           expect(softDeletedEntries).toEqual({ mockCode1: mockEntry1 });
         }),
-        delay(5000),
+        delay(7000),
         switchMap(() => service.getSoftDeletedEntries())
       )
       .subscribe((result) => {
@@ -424,5 +415,121 @@ describe('QuickOrderService', () => {
         expect(result).toEqual({});
         done();
       });
+  });
+
+  describe('canAdd', () => {
+    it('should verify can add a product which already exists even list limit reached', () => {
+      let result: boolean;
+      service.setListLimit(1);
+      service.addProduct(mockProduct1);
+
+      service.canAdd(mockProduct1Code).subscribe((canAdd) => (result = canAdd));
+      expect(result).toBe(true);
+    });
+
+    describe('should verify cannot add next product because of limit', () => {
+      it('with product code', () => {
+        let result: boolean;
+        service.setListLimit(1);
+        service.addProduct(mockProduct1);
+
+        service
+          .canAdd(mockProduct2Code)
+          .subscribe((canAdd) => (result = canAdd));
+        expect(result).toBe(false);
+      });
+
+      it('without product code', () => {
+        let result: boolean;
+        service.setListLimit(1);
+        service.addProduct(mockProduct1);
+
+        service.canAdd().subscribe((canAdd) => (result = canAdd));
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('adding list of products to non-empty entry list', () => {
+      const mockProductsToAdd: any[] = [
+        { productCode: mockProduct1Code },
+        { productCode: mockProduct2Code },
+        { productCode: mockProduct3Code },
+      ];
+
+      beforeEach(() => {
+        service.addProduct(mockProduct1);
+      });
+
+      it('should verify can add products which already exists even list limit reached', () => {
+        let result: boolean;
+        service.setListLimit(2);
+        service.addProduct(mockProduct2);
+
+        service
+          .canAdd(mockProduct1Code, mockProductsToAdd)
+          .subscribe((canAdd) => (result = canAdd));
+        expect(result).toBe(true);
+        service
+          .canAdd(mockProduct2Code, mockProductsToAdd)
+          .subscribe((canAdd) => (result = canAdd));
+        expect(result).toBe(true);
+      });
+
+      it('should verify can add 1st existing product in list of 3 products because it will NOT breach limit of 2', () => {
+        let result: boolean;
+        service.setListLimit(2);
+
+        service
+          .canAdd(mockProduct1Code, mockProductsToAdd)
+          .subscribe((canAdd) => (result = canAdd));
+        expect(result).toBe(true);
+      });
+
+      it('should verify can add 2nd non-existing product in list of 3 products because it will NOT breach limit of 2', () => {
+        let result: boolean;
+        service.setListLimit(2);
+
+        service
+          .canAdd(mockProduct2Code, mockProductsToAdd)
+          .subscribe((canAdd) => (result = canAdd));
+        expect(result).toBe(true);
+      });
+
+      it('should verify cannot add 3rd non-existing product in list of 3 products because it will breach limit of 2', () => {
+        let result: boolean;
+        service.setListLimit(2);
+
+        service
+          .canAdd(mockProduct3Code, mockProductsToAdd)
+          .subscribe((canAdd) => (result = canAdd));
+        expect(result).toBe(false);
+      });
+    });
+  });
+
+  describe('Non purchasable product', () => {
+    it('should return null if there is no error set up', (done) => {
+      service.getNonPurchasableProductError().subscribe((value) => {
+        expect(value).toBeNull();
+        done();
+      });
+    });
+
+    it('should set error and return it', (done) => {
+      service.setNonPurchasableProductError(mockProduct1);
+      service.getNonPurchasableProductError().subscribe((value) => {
+        expect(value).toEqual(mockProduct1);
+        done();
+      });
+    });
+
+    it('should clear error', (done) => {
+      service.setNonPurchasableProductError(mockProduct1);
+      service.clearNonPurchasableProductError();
+      service.getNonPurchasableProductError().subscribe((value) => {
+        expect(value).toBeNull();
+        done();
+      });
+    });
   });
 });

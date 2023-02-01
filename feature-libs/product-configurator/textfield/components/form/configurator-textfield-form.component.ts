@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Component } from '@angular/core';
 import {
   CommonConfigurator,
@@ -50,7 +56,7 @@ export class ConfiguratorTextfieldFormComponent {
 
   /**
    * Updates a configuration attribute
-   * @param attribute Configuration attribute, always containing a string typed value
+   * @param attribute - Configuration attribute, always containing a string typed value
    */
   updateConfiguration(
     attribute: ConfiguratorTextfield.ConfigurationInfo

@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { HttpEvent, HttpHandler, HttpRequest } from '@angular/common/http';
 import { Injectable, OnDestroy } from '@angular/core';
 import {
@@ -39,14 +45,6 @@ import { OAuthLibWrapperService } from './oauth-lib-wrapper.service';
   providedIn: 'root',
 })
 export class AuthHttpHeaderService implements OnDestroy {
-  /**
-   * Indicates whether the access token is being refreshed
-   *
-   * @deprecated will be removed in the next major. Use `AuthService.refreshInProgress$` instead.
-   */
-  // TODO:#13421 - legacy, remove this flag
-  protected refreshInProgress = false;
-
   /**
    * Starts the refresh of the access token
    */
@@ -145,8 +143,9 @@ export class AuthHttpHeaderService implements OnDestroy {
     token?: AuthToken
   ): HttpRequest<any> {
     const hasAuthorizationHeader = !!this.getAuthorizationHeader(request);
+    const isBaseSitesRequest = this.isBaseSitesRequest(request);
     const isOccUrl = this.isOccUrl(request.url);
-    if (!hasAuthorizationHeader && isOccUrl) {
+    if (!hasAuthorizationHeader && isOccUrl && !isBaseSitesRequest) {
       return request.clone({
         setHeaders: {
           ...this.createAuthorizationHeader(token),
@@ -158,6 +157,12 @@ export class AuthHttpHeaderService implements OnDestroy {
 
   protected isOccUrl(url: string): boolean {
     return url.includes(this.occEndpoints.getBaseUrl());
+  }
+
+  protected isBaseSitesRequest(request: HttpRequest<any>): boolean {
+    return request.url.includes(
+      this.occEndpoints.getRawEndpointValue('baseSites')
+    );
   }
 
   protected getAuthorizationHeader(request: HttpRequest<any>): string | null {
@@ -176,7 +181,7 @@ export class AuthHttpHeaderService implements OnDestroy {
     let currentToken: AuthToken | undefined;
     this.authStorageService
       .getToken()
-      .subscribe((token) => (currentToken = token))
+      .subscribe((authToken) => (currentToken = authToken))
       .unsubscribe();
 
     if (currentToken?.access_token) {
@@ -195,28 +200,15 @@ export class AuthHttpHeaderService implements OnDestroy {
   public handleExpiredAccessToken(
     request: HttpRequest<any>,
     next: HttpHandler,
-    // TODO:#13421 make required
-    initialToken?: AuthToken
+    initialToken: AuthToken | undefined
   ): Observable<HttpEvent<AuthToken>> {
-    // TODO:#13421 remove this if-statement, and just return the stream.
-    if (initialToken) {
-      return this.getValidToken(initialToken).pipe(
-        switchMap((token) =>
-          // we break the stream with EMPTY when we don't have the token. This prevents sending the requests with `Authorization: bearer undefined` header
-          token
-            ? next.handle(this.createNewRequestWithNewToken(request, token))
-            : EMPTY
-        )
-      );
-    }
-
-    // TODO:#13421 legacy - remove in 5.0
-    return this.handleExpiredToken().pipe(
-      switchMap((token) => {
-        return token
+    return this.getValidToken(initialToken).pipe(
+      switchMap((token) =>
+        // we break the stream with EMPTY when we don't have the token. This prevents sending the requests with `Authorization: bearer undefined` header
+        token
           ? next.handle(this.createNewRequestWithNewToken(request, token))
-          : EMPTY;
-      })
+          : EMPTY
+      )
     );
   }
 
@@ -248,42 +240,6 @@ export class AuthHttpHeaderService implements OnDestroy {
     });
   }
 
-  // TODO:#13421 - remove this method
-  /**
-   * Attempts to refresh token if possible.
-   * If it is not possible calls `handleExpiredRefreshToken`.
-   *
-   * @return observable which omits new access_token. (Warn: might never emit!).
-   *
-   * @deprecated will be removed in the next major. Use `getValidToken()` instead
-   */
-  protected handleExpiredToken(): Observable<AuthToken | undefined> {
-    const stream = this.authStorageService.getToken();
-    let oldToken: AuthToken;
-    return stream.pipe(
-      tap((token) => {
-        if (
-          token.access_token &&
-          token.refresh_token &&
-          !oldToken &&
-          !this.refreshInProgress
-        ) {
-          this.refreshInProgress = true;
-          this.oAuthLibWrapperService.refreshToken();
-        } else if (!token.refresh_token) {
-          this.handleExpiredRefreshToken();
-        }
-        oldToken = oldToken || token;
-      }),
-      filter((token) => oldToken.access_token !== token.access_token),
-      tap(() => {
-        this.refreshInProgress = false;
-      }),
-      map((token) => (token?.access_token ? token : undefined)),
-      take(1)
-    );
-  }
-
   /**
    * Emits the token or `undefined` only when the refresh or the logout processes are finished.
    */
@@ -307,7 +263,7 @@ export class AuthHttpHeaderService implements OnDestroy {
    * It will attempt to refresh it if the current one expired; emits after the new one is retrieved.
    */
   protected getValidToken(
-    requestToken: AuthToken
+    requestToken: AuthToken | undefined
   ): Observable<AuthToken | undefined> {
     return defer(() => {
       // flag to only refresh token only on first emission
@@ -324,7 +280,9 @@ export class AuthHttpHeaderService implements OnDestroy {
           }
           refreshTriggered = true;
         }),
-        skipWhile((token) => token?.access_token === requestToken.access_token),
+        skipWhile(
+          (token) => token?.access_token === requestToken?.access_token
+        ),
         take(1)
       );
     });

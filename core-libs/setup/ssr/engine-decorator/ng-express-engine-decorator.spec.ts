@@ -1,10 +1,14 @@
+import { SERVER_REQUEST_URL } from '@spartacus/core';
 import {
   decorateExpressEngine,
   NgExpressEngine,
   NgExpressEngineDecorator,
   NgExpressEngineInstance,
 } from './ng-express-engine-decorator';
-import { SERVER_REQUEST_URL } from '@spartacus/core';
+
+jest.mock('fs', () => ({
+  readFileSync: () => '',
+}));
 
 describe('NgExpressEngineDecorator', () => {
   describe('get', () => {
@@ -30,13 +34,8 @@ describe('NgExpressEngineDecorator', () => {
         providers: [{ provide: 'testToken', useValue: 'testValue' }],
       } as any;
 
-      originalEngine = jasmine
-        .createSpy('ngExpressEngine')
-        .and.callFake(() => originalEngineInstance);
-
-      originalEngineInstance = jasmine
-        .createSpy('ngExpressEngineInstance')
-        .and.callFake(() => {});
+      originalEngine = jest.fn(() => originalEngineInstance);
+      originalEngineInstance = jest.fn(() => {});
 
       const engine = NgExpressEngineDecorator.get(originalEngine, null);
       const engineInstance = engine(mockEngineOptions);
@@ -53,9 +52,9 @@ describe('NgExpressEngineDecorator', () => {
 
     it(`should pass setup options to the original engine`, () => {
       expect(originalEngine).toHaveBeenCalledWith(
-        jasmine.objectContaining({
+        expect.objectContaining({
           bootstrap: 'TestModule',
-          providers: jasmine.arrayContaining([
+          providers: expect.arrayContaining([
             { provide: 'testToken', useValue: 'testValue' },
           ]),
         })
@@ -64,9 +63,9 @@ describe('NgExpressEngineDecorator', () => {
 
     it(`should add SERVER_REQUEST_URL to providers in the setup options passed to the original engine`, () => {
       expect(originalEngine).toHaveBeenCalledWith(
-        jasmine.objectContaining({
-          providers: jasmine.arrayContaining([
-            jasmine.objectContaining({
+        expect.objectContaining({
+          providers: expect.arrayContaining([
+            expect.objectContaining({
               provide: SERVER_REQUEST_URL,
             }),
           ]),
@@ -87,14 +86,22 @@ describe('decorateExpressEngine', () => {
   let engineInstance;
 
   beforeEach(() => {
+    const app = {
+      get:
+        (_name: string): any =>
+        (_connectionRemoteAddress: string) => {},
+    };
+
     mockOptions = {
       req: {
         protocol: 'https',
         originalUrl: '/electronics/en/USD/cart',
-        get: jasmine.createSpy('req.get').and.returnValue('site.com'),
+        get: jest.fn(() => 'site.com'),
+        app,
+        connection: {},
       },
-      res: {
-        set: jasmine.createSpy('req.set'),
+      res: <Partial<Response>>{
+        set: jest.fn(() => {}),
       },
     } as any;
 
@@ -103,13 +110,8 @@ describe('decorateExpressEngine', () => {
       providers: [{ provide: 'testToken', useValue: 'testValue' }],
     } as any;
 
-    originalEngine = jasmine
-      .createSpy('ngExpressEngine')
-      .and.callFake(() => originalEngineInstance);
-
-    originalEngineInstance = jasmine
-      .createSpy('ngExpressEngineInstance')
-      .and.callFake(() => {});
+    originalEngine = jest.fn(() => originalEngineInstance);
+    originalEngineInstance = jest.fn(() => {});
   });
 
   describe('with disabled optimizations', () => {
@@ -129,9 +131,9 @@ describe('decorateExpressEngine', () => {
 
     it(`should pass setup options to the original engine`, () => {
       expect(originalEngine).toHaveBeenCalledWith(
-        jasmine.objectContaining({
+        expect.objectContaining({
           bootstrap: 'TestModule',
-          providers: jasmine.arrayContaining([
+          providers: expect.arrayContaining([
             { provide: 'testToken', useValue: 'testValue' },
           ]),
         })
@@ -140,9 +142,9 @@ describe('decorateExpressEngine', () => {
 
     it(`should add SERVER_REQUEST_URL to providers in the setup options passed to the original engine`, () => {
       expect(originalEngine).toHaveBeenCalledWith(
-        jasmine.objectContaining({
-          providers: jasmine.arrayContaining([
-            jasmine.objectContaining({
+        expect.objectContaining({
+          providers: expect.arrayContaining([
+            expect.objectContaining({
               provide: SERVER_REQUEST_URL,
             }),
           ]),
@@ -182,7 +184,7 @@ describe('decorateExpressEngine', () => {
       expect(originalEngineInstance).toHaveBeenCalledWith(
         mockPath,
         mockOptions,
-        jasmine.any(Function)
+        expect.any(Function)
       );
     });
 
@@ -197,9 +199,9 @@ describe('decorateExpressEngine', () => {
 
     it(`should pass setup options to the original engine`, () => {
       expect(originalEngine).toHaveBeenCalledWith(
-        jasmine.objectContaining({
+        expect.objectContaining({
           bootstrap: 'TestModule',
-          providers: jasmine.arrayContaining([
+          providers: expect.arrayContaining([
             { provide: 'testToken', useValue: 'testValue' },
           ]),
         })
@@ -208,9 +210,9 @@ describe('decorateExpressEngine', () => {
 
     it(`should add SERVER_REQUEST_URL to providers in the setup options passed to the original engine`, () => {
       expect(originalEngine).toHaveBeenCalledWith(
-        jasmine.objectContaining({
-          providers: jasmine.arrayContaining([
-            jasmine.objectContaining({
+        expect.objectContaining({
+          providers: expect.arrayContaining([
+            expect.objectContaining({
               provide: SERVER_REQUEST_URL,
             }),
           ]),

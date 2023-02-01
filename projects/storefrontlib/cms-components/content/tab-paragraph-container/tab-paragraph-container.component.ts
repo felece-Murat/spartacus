@@ -1,8 +1,13 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  OnDestroy,
   OnInit,
   QueryList,
   ViewChildren,
@@ -12,40 +17,36 @@ import {
   CMSTabParagraphContainer,
   WindowRef,
 } from '@spartacus/core';
-import { combineLatest, Observable, Subscription } from 'rxjs';
-import { distinctUntilChanged, map, switchMap, take } from 'rxjs/operators';
+import { combineLatest, Observable } from 'rxjs';
+import { distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 import { ComponentWrapperDirective } from '../../../cms-structure/page/component/component-wrapper.directive';
 import { CmsComponentData } from '../../../cms-structure/page/model/index';
-import { BreakpointService } from '../../../layout/breakpoint/breakpoint.service';
-import { BREAKPOINT } from '../../../layout/config/layout-config';
 
 @Component({
   selector: 'cx-tab-paragraph-container',
   templateUrl: './tab-paragraph-container.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TabParagraphContainerComponent
-  implements AfterViewInit, OnInit, OnDestroy
-{
+export class TabParagraphContainerComponent implements AfterViewInit, OnInit {
   activeTabNum = 0;
+  ariaLabel: string;
 
   @ViewChildren(ComponentWrapperDirective)
   children!: QueryList<ComponentWrapperDirective>;
 
   tabTitleParams: (Observable<any> | null)[] = [];
 
-  // TODO: it is not used any more, so can be removed in 5.0
-  subscription: Subscription;
-
   constructor(
     public componentData: CmsComponentData<CMSTabParagraphContainer>,
     protected cmsService: CmsService,
-    protected winRef: WindowRef,
-    protected breakpointService: BreakpointService
+    protected winRef: WindowRef
   ) {}
 
   components$: Observable<any[]> = this.componentData.data$.pipe(
     distinctUntilChanged((x, y) => x?.components === y?.components),
+    tap((data: CMSTabParagraphContainer) => {
+      this.ariaLabel = `${data?.uid}.tabPanelContainerRegion`;
+    }),
     switchMap((data) =>
       combineLatest(
         (data?.components ?? '').split(' ').map((component) =>
@@ -75,21 +76,16 @@ export class TabParagraphContainerComponent
   );
 
   select(tabNum: number, event?: MouseEvent): void {
-    this.breakpointService
-      ?.isDown(BREAKPOINT.sm)
-      .pipe(take(1))
-      .subscribe((res) => {
-        if (res) {
-          this.activeTabNum = this.activeTabNum === tabNum ? -1 : tabNum;
-          if (event && event?.target) {
-            const target = event.target as HTMLElement;
-            const parentNode = target.parentNode as HTMLElement;
-            this.winRef?.nativeWindow?.scrollTo(0, parentNode.offsetTop);
-          }
-        } else {
-          this.activeTabNum = tabNum;
-        }
+    this.activeTabNum = this.activeTabNum === tabNum ? -1 : tabNum;
+    if (event && event?.target) {
+      const target = event.target as HTMLElement;
+      const parentNode = target.parentNode as HTMLElement;
+      this.winRef?.nativeWindow?.scrollTo({
+        left: 0,
+        top: parentNode.offsetTop,
+        behavior: 'smooth',
       });
+    }
   }
 
   ngOnInit(): void {
@@ -109,19 +105,9 @@ export class TabParagraphContainerComponent
     this.tabTitleParams.push(componentRef.instance.tabTitleParam$);
   }
 
-  private getTitleParams(children: QueryList<ComponentWrapperDirective>) {
+  protected getTitleParams(children: QueryList<ComponentWrapperDirective>) {
     children.forEach((comp) => {
-      if (comp.cmpRef?.instance.tabTitleParam$) {
-        this.tabTitleParams.push(comp.cmpRef.instance.tabTitleParam$);
-      } else {
-        this.tabTitleParams.push(null);
-      }
+      this.tabTitleParams.push(comp['cmpRef']?.instance.tabTitleParam$ ?? null);
     });
-  }
-
-  ngOnDestroy(): void {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
   }
 }

@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export const orgUnit = {
   header: 'All units ({{count}})',
   unit: 'Unit',
@@ -6,7 +12,7 @@ export const orgUnit = {
   approvalProcess: 'Approval process',
   parentUnit: 'Parent Unit',
   active: 'Status',
-  hint: 'Units represent departments, stores, regions, or any other logical grouping that makes sense to you. The cost centers and shipping addresses available to a buyer when checking out, depend on their unit. Users have access to all child units of their primary unit.',
+  hint: 'Units represent departments, stores, regions, or any other logical grouping that makes sense to you. The cost centers and delivery addresses available to a buyer when checking out, depend on their unit. Users have access to all child units of their primary unit.',
   details: {
     title: 'Unit Details',
     subtitle: 'Unit: {{ item.name }}',
@@ -39,13 +45,15 @@ export const orgUnit = {
     units: 'Child Units',
     users: 'Users',
     approvers: 'Approvers',
-    shippingAddresses: 'Shipping Addresses',
+    shippingAddresses: 'Delivery Addresses',
     costCenters: 'Cost Centers',
   },
 
   tree: {
     expandAll: 'Expand all',
     collapseAll: 'Collapse all',
+    expand: 'Expand',
+    collapse: 'collapse',
   },
 
   children: {
@@ -68,6 +76,8 @@ export const orgUnit = {
   form: {
     parentOrgUnit: 'Parent business unit',
     create: 'Create Unit',
+    parentOrgUnitNotes:
+      'This unit is the top-level unit for your organization. It cannot be assigned to another unit.',
   },
   users: {
     header: 'Users in {{code}}',
@@ -103,7 +113,7 @@ export const orgUnit = {
     children: 'Child units',
     users: 'Users',
     approvers: 'Approvers',
-    addresses: 'Shipping addresses',
+    addresses: 'Delivery addresses',
     addressDetails: '{{formattedAddress}}',
     costCenters: 'Cost Centers',
   },
@@ -115,7 +125,7 @@ export const orgUnitChildren = {
   info: {
     disabledCreate: 'Child unit can not be created for disabled unit.',
   },
-  hint: 'Units represent departments, stores, regions, or any other logical grouping that makes sense to you. Users "inherit" child units, meaning buyers have access to cost centers and shipping addresses of child units when checking out.',
+  hint: 'Units represent departments, stores, regions, or any other logical grouping that makes sense to you. Users "inherit" child units, meaning buyers have access to cost centers and delivery addresses of child units when checking out.',
 };
 
 export const orgUnitAssignedRoles = {
@@ -155,11 +165,11 @@ export const orgUnitUsers = {
   info: {
     disabledCreate: 'User can not be created for disabled unit.',
   },
-  hint: 'Users are the buyers, approvers, managers, and administrators of your organization. Each user is assigned a role for making or approving purchases. Users "inherit" child units, meaning buyers have access to cost centers and shipping addresses of child units when checking out.',
+  hint: 'Users are the buyers, approvers, managers, and administrators of your organization. Each user is assigned a role for making or approving purchases. Users "inherit" child units, meaning buyers have access to cost centers and delivery addresses of child units when checking out.',
 };
 
 export const orgUnitUserRoles = {
-  title: 'User roles',
+  title: 'User roles and rights',
   subtitle: 'User: {{item.name}}',
   messages: {
     rolesUpdated: 'Roles successfully updated for {{item.name}}',
@@ -176,7 +186,7 @@ export const orgUnitCostCenters = {
 };
 
 export const orgUnitAddress = {
-  title: 'Shipping addresses',
+  title: 'Delivery addresses',
   subtitle: 'Unit: {{item.name}}',
 
   country: 'Country/Region',
@@ -194,7 +204,7 @@ export const orgUnitAddress = {
   aptSuite: 'Apt, Suite',
   selectOne: 'Select One...',
 
-  hint: 'When a buyer is checking out using the "Account" purchase method, they much choose a cost center. The shipping addresses available to the buyer depend on the unit of the cost center chosen.',
+  hint: 'When a buyer is checking out using the "Account" purchase method, they much choose a cost center. The delivery addresses available to the buyer depend on the unit of the cost center chosen.',
   details: {
     title: 'Address details',
     subtitle: 'Unit: {{item.name}}',

@@ -1,16 +1,19 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { NgModule } from '@angular/core';
 import {
   AnonymousConsentsModule,
   AuthModule,
-  CartModule,
-  CartOccModule,
   CostCenterOccModule,
   ExternalRoutesModule,
-  OrderOccModule,
   ProductModule,
   ProductOccModule,
-  UserOccTransitional_4_2_Module,
-  UserTransitional_4_2_Module,
+  UserModule,
+  UserOccModule,
 } from '@spartacus/core';
 import {
   AddressBookModule,
@@ -19,8 +22,6 @@ import {
   BannerCarouselModule,
   BannerModule,
   BreadcrumbModule,
-  CartComponentModule,
-  CartPageEventModule,
   CategoryNavigationModule,
   CmsParagraphModule,
   ConsentManagementModule,
@@ -38,6 +39,7 @@ import {
   NotificationPreferenceModule,
   PageTitleModule,
   PaymentMethodsModule,
+  PDFModule,
   ProductCarouselModule,
   ProductDetailsPageModule,
   ProductFacetNavigationModule,
@@ -49,57 +51,71 @@ import {
   ProductReferencesModule,
   ProductSummaryModule,
   ProductTabsModule,
+  ScrollToTopModule,
   SearchBoxModule,
   SiteContextSelectorModule,
   StockNotificationModule,
   TabParagraphContainerModule,
-  WishListModule,
+  VideoModule,
 } from '@spartacus/storefront';
 import { environment } from '../../environments/environment';
-import { AdministrationFeatureModule } from './features/administration-feature.module';
-import { AsmFeatureModule } from './features/asm-feature.module';
-import { BulkPricingFeatureModule } from './features/bulk-pricing-feature.module';
-import { CdcFeatureModule } from './features/cdc-feature.module';
-import { CdsFeatureModule } from './features/cds-feature.module';
-import { CheckoutFeatureModule } from './features/checkout-feature.module';
-import { OrderApprovalFeatureModule } from './features/order-approval-feature.module';
-import { OrderFeatureModule } from './features/order-feature.module';
-import { DigitalPaymentsFeatureModule } from './features/digital-payments-feature.module';
-import { ProductConfiguratorRulebasedCpqFeatureModule } from './features/product-configurator-rulebased-cpq-feature.module';
-import { ProductConfiguratorRulebasedFeatureModule } from './features/product-configurator-rulebased-feature.module';
-import { ProductConfiguratorTextfieldFeatureModule } from './features/product-configurator-textfield-feature.module';
-import { QualtricsFeatureModule } from './features/qualtrics-feature.module';
-import { QuickOrderFeatureModule } from './features/quick-order-feature.module';
-import { SavedCartFeatureModule } from './features/saved-cart-feature.module';
-import { SmartEditFeatureModule } from './features/smartedit-feature.module';
-import { StorefinderFeatureModule } from './features/storefinder-feature.module';
-import { TrackingFeatureModule } from './features/tracking-feature.module';
-import { UserFeatureModule } from './features/user-feature.module';
-import { VariantsFeatureModule } from './features/variants-feature.module';
-import { ImageZoomFeatureModule } from './features/image-zoom-feature.module';
+import { AsmFeatureModule } from './features/asm/asm-feature.module';
+import { CartBaseFeatureModule } from './features/cart/cart-base-feature.module';
+import { ImportExportFeatureModule } from './features/cart/cart-import-export-feature.module';
+import { QuickOrderFeatureModule } from './features/cart/cart-quick-order-feature.module';
+import { SavedCartFeatureModule } from './features/cart/cart-saved-cart-feature.module';
+import { WishListFeatureModule } from './features/cart/wish-list-feature.module';
+import { CdcFeatureModule } from './features/cdc/cdc-feature.module';
+import { CdsFeatureModule } from './features/cds/cds-feature.module';
+import { CheckoutFeatureModule } from './features/checkout/checkout-feature.module';
+import { CustomerTicketingFeatureModule } from './features/customer-ticketing/customer-ticketing-feature.module';
+import { DigitalPaymentsFeatureModule } from './features/digital-payments/digital-payments-feature.module';
+import { EpdVisualizationFeatureModule } from './features/epd-visualization/epd-visualization-feature.module';
+import { OrderFeatureModule } from './features/order/order-feature.module';
+import { AdministrationFeatureModule } from './features/organization/organization-administration-feature.module';
+import { OrderApprovalFeatureModule } from './features/organization/organization-order-approval-feature.module';
+import { UnitOrderFeatureModule } from './features/organization/organization-unit-order-feature.module';
+import { ProductConfiguratorRulebasedFeatureModule } from './features/product-configurator/product-configurator-rulebased-feature.module';
+import { ProductConfiguratorTextfieldFeatureModule } from './features/product-configurator/product-configurator-textfield-feature.module';
+import { BulkPricingFeatureModule } from './features/product/product-bulk-pricing-feature.module';
+import { ImageZoomFeatureModule } from './features/product/product-image-zoom-feature.module';
+import { VariantsFeatureModule } from './features/product/product-variants-feature.module';
+import { QualtricsFeatureModule } from './features/qualtrics/qualtrics-feature.module';
+import { OrganizationUserRegistrationFeatureModule } from './features/registration-feature.module';
+import { SmartEditFeatureModule } from './features/smartedit/smartedit-feature.module';
+import { StorefinderFeatureModule } from './features/storefinder/storefinder-feature.module';
+import { TrackingFeatureModule } from './features/tracking/tracking-feature.module';
+import { UserFeatureModule } from './features/user/user-feature.module';
+import { AccountSummaryFeatureModule } from './features/organization/organization-account-summary-feature.module';
+import { S4OMFeatureModule } from './features/s4om/s4om-feature.module';
 
 const featureModules = [];
 
 if (environment.b2b) {
   featureModules.push(
     AdministrationFeatureModule,
+    AccountSummaryFeatureModule,
     BulkPricingFeatureModule,
-    OrderApprovalFeatureModule
+    OrderApprovalFeatureModule,
+    OrganizationUserRegistrationFeatureModule,
+    UnitOrderFeatureModule
   );
 }
+
 if (environment.cdc) {
   featureModules.push(CdcFeatureModule);
 }
 if (environment.cds) {
   featureModules.push(CdsFeatureModule);
 }
-if (environment.cpq) {
-  featureModules.push(ProductConfiguratorRulebasedCpqFeatureModule);
-} else {
-  featureModules.push(ProductConfiguratorRulebasedFeatureModule);
-}
 if (environment.digitalPayments) {
   featureModules.push(DigitalPaymentsFeatureModule);
+}
+if (environment.epdVisualization) {
+  featureModules.push(EpdVisualizationFeatureModule);
+}
+if (environment.s4om) {
+  featureModules.push(S4OMFeatureModule);
 }
 
 @NgModule({
@@ -122,10 +138,13 @@ if (environment.digitalPayments) {
     FooterNavigationModule,
     PageTitleModule,
     BreadcrumbModule,
+    PDFModule,
+    ScrollToTopModule,
+    VideoModule,
 
     // User Core
-    UserTransitional_4_2_Module,
-    UserOccTransitional_4_2_Module,
+    UserModule,
+    UserOccModule,
     // User UI
     AddressBookModule,
     PaymentMethodsModule,
@@ -158,23 +177,12 @@ if (environment.digitalPayments) {
     ProductSummaryModule,
     ProductIntroModule,
 
-    // Cart Core
-    CartModule.forRoot(),
-    CartOccModule,
-    // Cart UI
-    CartComponentModule,
-    WishListModule,
-
     // Cost Center
     CostCenterOccModule,
-
-    // Order
-    OrderOccModule,
 
     // Page Events
     NavigationEventModule,
     HomePageEventModule,
-    CartPageEventModule,
     ProductPageEventModule,
 
     /************************* Opt-in features *************************/
@@ -182,20 +190,36 @@ if (environment.digitalPayments) {
     ExternalRoutesModule.forRoot(), // to opt-in explicitly, is added by default schematics
     JsonLdBuilderModule,
 
-    /************************* External features *************************/
+    /************************* Feature libraries *************************/
     UserFeatureModule,
-    CheckoutFeatureModule,
-    AsmFeatureModule,
-    StorefinderFeatureModule,
-    QualtricsFeatureModule,
-    SmartEditFeatureModule,
-    TrackingFeatureModule,
-    VariantsFeatureModule,
+
+    CartBaseFeatureModule,
+    WishListFeatureModule,
     SavedCartFeatureModule,
-    OrderFeatureModule,
     QuickOrderFeatureModule,
-    ProductConfiguratorTextfieldFeatureModule,
+    ImportExportFeatureModule,
+
+    OrderFeatureModule,
+
+    CheckoutFeatureModule,
+
+    TrackingFeatureModule,
+
+    AsmFeatureModule,
+
+    StorefinderFeatureModule,
+
+    QualtricsFeatureModule,
+
+    SmartEditFeatureModule,
+
+    VariantsFeatureModule,
     ImageZoomFeatureModule,
+    CustomerTicketingFeatureModule,
+
+    ProductConfiguratorTextfieldFeatureModule,
+    ProductConfiguratorRulebasedFeatureModule,
+
     ...featureModules,
   ],
 })

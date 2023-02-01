@@ -1,10 +1,16 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import {
   ChangeDetectionStrategy,
   Component,
   Input,
   OnInit,
 } from '@angular/core';
-import { FormControl } from '@angular/forms';
+import { UntypedFormControl } from '@angular/forms';
 import { Configurator } from '../../../../core/model/configurator.model';
 import { ConfiguratorAttributeProductCardComponentOptions } from '../../product-card/configurator-attribute-product-card.component';
 import { ConfiguratorAttributeSingleSelectionBaseComponent } from '../base/configurator-attribute-single-selection-base.component';
@@ -19,19 +25,19 @@ export class ConfiguratorAttributeSingleSelectionBundleDropdownComponent
   extends ConfiguratorAttributeSingleSelectionBaseComponent
   implements OnInit
 {
-  attributeDropDownForm = new FormControl('');
+  attributeDropDownForm = new UntypedFormControl('');
   selectionValue: Configurator.Value;
 
   @Input() group: string;
 
   ngOnInit() {
-    this.attributeDropDownForm.setValue(this.attribute?.selectedSingleValue);
+    this.attributeDropDownForm.setValue(this.attribute.selectedSingleValue);
 
     const values = this.attribute.values;
     if (values && values.length > 0) {
-      const value = values.find((value) => value.selected);
-      if (value) {
-        this.selectionValue = value;
+      const selectedValue = values.find((value) => value.selected);
+      if (selectedValue) {
+        this.selectionValue = selectedValue;
       }
     }
   }
@@ -49,6 +55,9 @@ export class ConfiguratorAttributeSingleSelectionBundleDropdownComponent
       withQuantity: false,
       loading$: this.loading$,
       attributeId: this.getAttributeCode(this.attribute),
+      attributeName: this.attribute.name,
+      itemCount: 0,
+      itemIndex: 0,
     };
   }
 }

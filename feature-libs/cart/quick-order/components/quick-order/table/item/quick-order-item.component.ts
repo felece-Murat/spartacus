@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -6,18 +12,18 @@ import {
   OnDestroy,
   OnInit,
 } from '@angular/core';
-import { FormControl } from '@angular/forms';
+import { UntypedFormControl } from '@angular/forms';
+import { OrderEntry } from '@spartacus/cart/base/root';
 import { QuickOrderFacade } from '@spartacus/cart/quick-order/root';
-import { OrderEntry } from '@spartacus/core';
 import { Subscription } from 'rxjs';
 
 @Component({
-  selector: 'cx-quick-order-item',
+  selector: '[cx-quick-order-item], cx-quick-order-item',
   templateUrl: './quick-order-item.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuickOrderItemComponent implements OnInit, OnDestroy {
-  quantityControl: FormControl;
+  quantityControl: UntypedFormControl;
 
   get entry(): OrderEntry {
     return this._entry;
@@ -25,7 +31,9 @@ export class QuickOrderItemComponent implements OnInit, OnDestroy {
 
   @Input('entry') set entry(value: OrderEntry) {
     this._entry = value;
-    this.quantityControl = new FormControl(this.entry.quantity);
+    this.quantityControl = new UntypedFormControl(this.entry.quantity, {
+      updateOn: 'blur',
+    });
   }
 
   @Input()
@@ -35,7 +43,7 @@ export class QuickOrderItemComponent implements OnInit, OnDestroy {
   loading: boolean = false;
 
   protected _entry: OrderEntry;
-  private subscription = new Subscription();
+  protected subscription = new Subscription();
 
   constructor(
     protected cd: ChangeDetectorRef,
@@ -63,7 +71,7 @@ export class QuickOrderItemComponent implements OnInit, OnDestroy {
   protected watchProductAdd(): Subscription {
     return this.quickOrderService.getProductAdded().subscribe((productCode) => {
       if (productCode === this.entry.product?.code) {
-        this.quantityControl = new FormControl(this.entry.quantity);
+        this.quantityControl = new UntypedFormControl(this.entry.quantity);
         this.cd.detectChanges();
       }
     });

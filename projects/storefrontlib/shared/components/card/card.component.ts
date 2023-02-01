@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { ICON_TYPE } from '../../../cms-components/misc/icon/icon.model';
 
@@ -20,6 +26,9 @@ export interface Card {
   img?: string;
   actions?: Array<CardAction | CardLinkAction>;
   deleteMsg?: string;
+  label?: string;
+  role?: string;
+  customClass?: string;
 }
 
 @Component({
@@ -50,7 +59,7 @@ export class CardComponent implements OnInit {
   isDefault = false;
 
   @Input()
-  content: Card;
+  content: Card | null;
 
   @Input()
   fitToContainer = false;
@@ -60,6 +69,9 @@ export class CardComponent implements OnInit {
 
   @Input()
   charactersLimit = 100;
+
+  @Input()
+  index: number;
 
   // ACTIONS
 
@@ -89,7 +101,21 @@ export class CardComponent implements OnInit {
     this.editCard.emit(4);
   }
 
-  constructor() {}
+  isCardAction(action: CardAction | CardLinkAction): action is CardAction {
+    return (action as CardAction).event !== undefined;
+  }
 
-  ngOnInit() {}
+  isCardLinkAction(
+    action: CardAction | CardLinkAction
+  ): action is CardLinkAction {
+    return (action as CardLinkAction).link !== undefined;
+  }
+
+  constructor() {
+    // Intentional empty constructor
+  }
+
+  ngOnInit() {
+    // Intentional empty method
+  }
 }

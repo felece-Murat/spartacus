@@ -8,12 +8,23 @@ import {
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
-import { Address, I18nTestingModule, User } from '@spartacus/core';
+import {
+  Address,
+  FeaturesConfig,
+  FeaturesConfigModule,
+  GlobalMessageService,
+  I18nTestingModule,
+  User,
+} from '@spartacus/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { CardModule } from '../../../shared/components/card';
 import { SpinnerModule } from '../../../shared/components/spinner/spinner.module';
 import { AddressBookComponent } from './address-book.component';
 import { AddressBookComponentService } from './address-book.component.service';
+
+class MockGlobalMessageService {
+  add = jasmine.createSpy();
+}
 
 const mockAddress: Address = {
   id: '123',
@@ -96,11 +107,19 @@ describe('AddressBookComponent', () => {
           I18nTestingModule,
           CardModule,
           RouterTestingModule,
+          FeaturesConfigModule,
         ],
         providers: [
           {
             provide: AddressBookComponentService,
             useClass: MockComponentService,
+          },
+          { provide: GlobalMessageService, useClass: MockGlobalMessageService },
+          {
+            provide: FeaturesConfig,
+            useValue: {
+              features: { level: '5.1' },
+            },
           },
         ],
         declarations: [AddressBookComponent, MockAddressFormComponent],
@@ -208,10 +227,10 @@ describe('AddressBookComponent', () => {
 
   describe('setAddressAsDefault', () => {
     it('should set Address as default', () => {
-      component.setAddressAsDefault(mockAddress[0]);
+      component.setAddressAsDefault(mockAddress);
       expect(
         addressBookComponentService.setAddressAsDefault
-      ).toHaveBeenCalledWith(mockAddress[0]);
+      ).toHaveBeenCalledWith(mockAddress.id);
     });
   });
 
@@ -221,6 +240,26 @@ describe('AddressBookComponent', () => {
       expect(
         addressBookComponentService.deleteUserAddress
       ).toHaveBeenCalledWith('1');
+    });
+  });
+
+  describe('Header', () => {
+    it('should set correct header for add new address', () => {
+      component.showEditAddressForm = false;
+      component.showAddAddressForm = true;
+      fixture.detectChanges();
+
+      expect(el.query(By.css('h2')).nativeElement.innerText).toEqual(
+        'addressBook.addNewDeliveryAddress'
+      );
+    });
+    it('should set correct header for edit address', () => {
+      component.editAddressButtonHandle(mockAddress);
+      fixture.detectChanges();
+
+      expect(el.query(By.css('h2')).nativeElement.innerText).toEqual(
+        'addressBook.editDeliveryAddress'
+      );
     });
   });
 });

@@ -9,15 +9,23 @@ import {
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
+import {
+  FeaturesConfig,
+  FeaturesConfigModule,
+  I18nTestingModule,
+} from '@spartacus/core';
 import { CommonConfiguratorTestUtilsService } from '../../../../../common/testing/common-configurator-test-utils.service';
 import { Configurator } from '../../../../core/model/configurator.model';
 import { ConfiguratorPriceComponentOptions } from '../../../price/configurator-price.component';
 import { ConfiguratorAttributeQuantityComponentOptions } from '../../quantity/configurator-attribute-quantity.component';
+import { ConfiguratorAttributeInputFieldComponent } from '../input-field/configurator-attribute-input-field.component';
+import { ConfiguratorAttributeNumericInputFieldComponent } from '../numeric-input-field/configurator-attribute-numeric-input-field.component';
 import { ConfiguratorAttributeDropDownComponent } from './configurator-attribute-drop-down.component';
 
 function createValue(code: string, name: string, isSelected: boolean) {
   const value: Configurator.Value = {
     valueCode: code,
+    valueDisplay: name,
     name: name,
     selected: isSelected,
   };
@@ -54,7 +62,7 @@ describe('ConfigAttributeDropDownComponent', () => {
   let fixture: ComponentFixture<ConfiguratorAttributeDropDownComponent>;
 
   const ownerKey = 'theOwnerKey';
-  const name = 'theName';
+  const name = 'attributeName';
   const groupId = 'theGroupId';
   const selectedValue = 'selectedValue';
 
@@ -69,11 +77,27 @@ describe('ConfigAttributeDropDownComponent', () => {
       TestBed.configureTestingModule({
         declarations: [
           ConfiguratorAttributeDropDownComponent,
+          ConfiguratorAttributeInputFieldComponent,
+          ConfiguratorAttributeNumericInputFieldComponent,
           MockFocusDirective,
           MockConfiguratorAttributeQuantityComponent,
           MockConfiguratorPriceComponent,
         ],
-        imports: [ReactiveFormsModule, NgSelectModule],
+        providers: [
+          // TODO:(CXSPA-1689) #deprecation for next major release remove below feature config
+          {
+            provide: FeaturesConfig,
+            useValue: {
+              features: { level: '5.2' },
+            },
+          },
+        ],
+        imports: [
+          ReactiveFormsModule,
+          NgSelectModule,
+          I18nTestingModule,
+          FeaturesConfigModule,
+        ],
       })
         .overrideComponent(ConfiguratorAttributeDropDownComponent, {
           set: {
@@ -90,6 +114,7 @@ describe('ConfigAttributeDropDownComponent', () => {
     component = fixture.componentInstance;
     component.attribute = {
       name: name,
+      label: name,
       attrCode: 444,
       dataType: Configurator.DataType.USER_SELECTION_QTY_ATTRIBUTE_LEVEL,
       uiType: Configurator.UiType.DROPDOWN,
@@ -112,7 +137,7 @@ describe('ConfigAttributeDropDownComponent', () => {
   it('should call emit of selectionChange onSelect', () => {
     component.ownerKey = ownerKey;
     spyOn(component.selectionChange, 'emit').and.callThrough();
-    component.onSelect(component.attributeDropDownForm?.value);
+    component.onSelect(component.attributeDropDownForm.value);
     expect(component.selectionChange.emit).toHaveBeenCalledWith(
       jasmine.objectContaining({
         ownerKey: ownerKey,
@@ -208,6 +233,142 @@ describe('ConfigAttributeDropDownComponent', () => {
         expect,
         htmlElem,
         'cx-configurator-price'
+      );
+    });
+  });
+
+  describe('Rendering for additional value', () => {
+    it('should provide input field for alpha numeric value ', () => {
+      component.attribute.uiType =
+        Configurator.UiType.DROPDOWN_ADDITIONAL_INPUT;
+      component.attribute.validationType = Configurator.ValidationType.NONE;
+      fixture.detectChanges();
+      htmlElem = fixture.nativeElement;
+      CommonConfiguratorTestUtilsService.expectElementPresent(
+        expect,
+        htmlElem,
+        'cx-configurator-attribute-input-field'
+      );
+    });
+
+    it('should provide input field for numeric value ', () => {
+      component.attribute.uiType =
+        Configurator.UiType.DROPDOWN_ADDITIONAL_INPUT;
+      component.attribute.validationType = Configurator.ValidationType.NUMERIC;
+      fixture.detectChanges();
+      htmlElem = fixture.nativeElement;
+      CommonConfiguratorTestUtilsService.expectElementPresent(
+        expect,
+        htmlElem,
+        'cx-configurator-attribute-numeric-input-field'
+      );
+    });
+  });
+
+  describe('Accessibility', () => {
+    it("should contain label element with class name 'cx-visually-hidden' that hides label content on the UI", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'label',
+        'cx-visually-hidden',
+        0,
+        undefined,
+        undefined,
+        'configurator.a11y.listbox count:' +
+          (component.attribute.values ? component.attribute.values.length : 0)
+      );
+    });
+
+    it("should contain select element with class name 'form-control' and 'aria-describedby' attribute that indicates the ID of the element that describe the elements", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'select',
+        'form-control',
+        0,
+        'aria-describedby',
+        'cx-configurator--label--attributeName'
+      );
+    });
+
+    it("should contain option elements with 'aria-label' attribute for value without price that defines an accessible name to label the current element", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'option',
+        undefined,
+        1,
+        'aria-label',
+        'configurator.a11y.selectedValueOfAttributeFull attribute:' +
+          component.attribute.label +
+          ' value:' +
+          value2.valueDisplay,
+        value2.valueDisplay
+      );
+    });
+
+    it("should contain option elements with 'aria-label' attribute for value with price that defines an accessible name to label the current element", () => {
+      let value = component.attribute.values
+        ? component.attribute.values[0]
+        : undefined;
+      if (value) {
+        value.valuePrice = {
+          currencyIso: '$',
+          formattedValue: '$100.00',
+          value: 100,
+        };
+      } else {
+        fail('Value not available');
+      }
+      fixture.detectChanges();
+
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'option',
+        undefined,
+        0,
+        'aria-label',
+        'configurator.a11y.selectedValueOfAttributeFullWithPrice attribute:' +
+          component.attribute.label +
+          ' price:' +
+          value1.valuePrice?.formattedValue +
+          ' value:' +
+          value1.valueDisplay,
+        value1.valueDisplay
+      );
+    });
+
+    it("should contain option elements with 'aria-label' attribute for value with total price that defines an accessible name to label the current element", () => {
+      let value = component.attribute.values
+        ? component.attribute.values[0]
+        : undefined;
+      if (value) {
+        value.valuePriceTotal = {
+          currencyIso: '$',
+          formattedValue: '$100.00',
+          value: 100,
+        };
+      } else {
+        fail('Value not available');
+      }
+      fixture.detectChanges();
+
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'option',
+        undefined,
+        0,
+        'aria-label',
+        'configurator.a11y.selectedValueOfAttributeFullWithPrice attribute:' +
+          component.attribute.label +
+          ' price:' +
+          value1.valuePrice?.formattedValue +
+          ' value:' +
+          value1.valueDisplay,
+        value1.valueDisplay
       );
     });
   });

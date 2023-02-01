@@ -1,13 +1,14 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Cart, CART_NORMALIZER } from '@spartacus/cart/base/root';
 import { SavedCartAdapter } from '@spartacus/cart/saved-cart/core';
-import {
-  Cart,
-  CART_NORMALIZER,
-  ConverterService,
-  Occ,
-  OccEndpointsService,
-} from '@spartacus/core';
+import { ConverterService, Occ, OccEndpointsService } from '@spartacus/core';
 import { Observable } from 'rxjs';
 import { map, pluck } from 'rxjs/operators';
 
@@ -41,25 +42,6 @@ export class OccSavedCartAdapter implements SavedCartAdapter {
       .pipe(pluck('savedCartData'), this.converter.pipeable(CART_NORMALIZER));
   }
 
-  saveCart(
-    userId: string,
-    cartId: string,
-    saveCartName: string,
-    saveCartDescription: string
-  ): Observable<Cart> {
-    return this.http
-      .patch<Occ.Cart>(
-        this.getSaveCartEndpoint(
-          userId,
-          cartId,
-          saveCartName,
-          saveCartDescription
-        ),
-        cartId
-      )
-      .pipe(pluck('savedCartData'), this.converter.pipeable(CART_NORMALIZER));
-  }
-
   cloneSavedCart(
     userId: string,
     cartId: string,
@@ -89,22 +71,6 @@ export class OccSavedCartAdapter implements SavedCartAdapter {
   ): string {
     return this.occEndpoints.buildUrl('restoreSavedCart', {
       urlParams: { userId, cartId },
-    });
-  }
-
-  protected getSaveCartEndpoint(
-    userId: string,
-    cartId: string,
-    saveCartName: string,
-    saveCartDescription: string
-  ): string {
-    return this.occEndpoints.buildUrl('saveCart', {
-      urlParams: {
-        userId,
-        cartId,
-        saveCartName,
-        saveCartDescription,
-      },
     });
   }
 

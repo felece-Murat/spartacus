@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -8,6 +14,7 @@ import {
   OnInit,
   Renderer2,
   ViewChild,
+  EventEmitter,
 } from '@angular/core';
 import { ImageGroup, isNotNullable, Product } from '@spartacus/core';
 import { ThumbnailsGroup } from '@spartacus/product/image-zoom/root';
@@ -58,6 +65,8 @@ export class ProductImageZoomViewComponent implements OnInit, OnDestroy {
   protected defaultImageReady$: Observable<boolean> =
     this.defaultImageReady.asObservable();
   protected zoomReady$: Observable<boolean> = this.zoomReady.asObservable();
+
+  activeThumb: EventEmitter<ImageGroup> = new EventEmitter<ImageGroup>();
 
   defaultImageClickHandler$: Observable<any[]> = this.defaultImageReady$.pipe(
     filter(Boolean),
@@ -156,6 +165,7 @@ export class ProductImageZoomViewComponent implements OnInit, OnDestroy {
 
   openImage(item: ImageGroup): void {
     this.mainMediaContainer.next(item);
+    this.activeThumb.emit(item);
   }
 
   /** find the index of the main media in the list of media */
@@ -204,9 +214,9 @@ export class ProductImageZoomViewComponent implements OnInit, OnDestroy {
       this.zoomedImage?.nativeElement?.getBoundingClientRect() as DOMRect;
     const imageElement = this.zoomedImage?.nativeElement?.firstChild;
 
-    if (!this.startCoords)
+    if (!this.startCoords) {
       this.startCoords = { x: touch.clientX, y: touch.clientY };
-
+    }
     this.left += touch.clientX - this.startCoords.x;
     this.top += touch.clientY - this.startCoords.y;
 

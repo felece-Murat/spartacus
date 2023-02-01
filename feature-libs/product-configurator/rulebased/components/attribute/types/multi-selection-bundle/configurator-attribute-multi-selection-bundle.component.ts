@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { Configurator } from '../../../../core/model/configurator.model';
@@ -26,6 +32,13 @@ export class ConfiguratorAttributeMultiSelectionBundleComponent
   multipleSelectionValues: SelectionValue[] = [];
 
   ngOnInit() {
+    this.initialize();
+  }
+
+  /**
+   * Initializes selection values and peventAction observable
+   */
+  protected initialize(): void {
     if (this.attribute.values && this.attribute.values.length > 0) {
       this.multipleSelectionValues = this.attribute.values.map(
         ({ name, quantity, selected, valueCode }) => ({
@@ -38,7 +51,7 @@ export class ConfiguratorAttributeMultiSelectionBundleComponent
     }
 
     if (
-      this.attribute?.required &&
+      this.attribute.required &&
       this.multipleSelectionValues.filter((value) => value.selected).length < 2
     ) {
       this.preventAction$.next(true);
@@ -91,10 +104,12 @@ export class ConfiguratorAttributeMultiSelectionBundleComponent
   }): ConfigFormUpdateEvent | undefined {
     const value: Configurator.Value | undefined =
       this.multipleSelectionValues.find(
-        (selectionValue) => selectionValue?.valueCode === eventValue.valueCode
+        (selectionValue) => selectionValue.valueCode === eventValue.valueCode
       );
 
-    if (!value) return;
+    if (!value) {
+      return;
+    }
 
     value.quantity = eventValue.quantity;
 
@@ -176,21 +191,29 @@ export class ConfiguratorAttributeMultiSelectionBundleComponent
    * @param {boolean} disableAllButtons - Prevent all actions, e.g. while loading
    * @param {boolean} hideRemoveButton - hide remove action, e.g. if only value required attribute
    * @param {Configurator.Value} value - Value
+   * @param {number} index - index of current value in list of values of attribute
    * @return {ConfiguratorAttributeProductCardComponentOptions} - New product card options
    */
   extractProductCardParameters(
     disableAllButtons: boolean | null,
     hideRemoveButton: boolean | null,
-    value: Configurator.Value
+    value: Configurator.Value,
+    index: number
   ): ConfiguratorAttributeProductCardComponentOptions {
     return {
-      disableAllButtons: disableAllButtons ? disableAllButtons : false,
-      hideRemoveButton: hideRemoveButton ? hideRemoveButton : false,
+      disableAllButtons: disableAllButtons ?? false,
+      hideRemoveButton: hideRemoveButton ?? false,
       productBoundValue: value,
       multiSelect: true,
       withQuantity: this.withQuantity,
       loading$: this.loading$,
       attributeId: this.getAttributeCode(this.attribute),
+      attributeLabel: this.attribute.label,
+      attributeName: this.attribute.name,
+      itemCount: this.attribute.values?.length
+        ? this.attribute.values.length
+        : 0,
+      itemIndex: index,
     };
   }
 }

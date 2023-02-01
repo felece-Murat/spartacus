@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export const address = {
   addressForm: {
     title: 'Title',
@@ -31,7 +37,7 @@ export const address = {
     streetAddress: 'Street Address',
     aptSuite: 'Apt, Suite',
     selectOne: 'Select One...',
-    setAsDefault: 'Set as default',
+    setAsDefault: 'Set as default delivery address',
     titleRequired: 'Title is required.',
     userAddressAddSuccess: 'New address was added successfully!',
     userAddressUpdateSuccess: 'Address updated successfully!',
@@ -39,13 +45,15 @@ export const address = {
     invalidAddress: 'Invalid Address',
   },
   addressBook: {
-    addNewShippingAddress: 'Add a new shipping address',
-    editShippingAddress: 'Edit shipping address',
+    addNewDeliveryAddress: 'Add a new delivery address',
+    editDeliveryAddress: 'Edit delivery address',
     areYouSureToDeleteAddress: 'Are you sure you want to delete this address?',
     addNewAddress: 'Add new address',
     addAddress: 'Add address',
     updateAddress: 'Update address',
     backToAddressList: 'Back to address list',
+    defaultDeliveryAddress: 'Default Delivery Address',
+    additionalDeliveryAddress: 'Additional Delivery Address {{number}}',
   },
   addressCard: {
     default: 'DEFAULT',
@@ -63,5 +71,9 @@ export const address = {
     enteredAddress: 'Entered address',
     editAddress: 'Edit address',
     saveAddress: 'Save address',
+  },
+  addressMessages: {
+    setAsDefaultSuccessfully:
+      'Address {{ streetAddress }} was successfully set as default',
   },
 };

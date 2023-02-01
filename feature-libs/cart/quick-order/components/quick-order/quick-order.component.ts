@@ -1,9 +1,17 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import {
   ChangeDetectionStrategy,
   Component,
   OnDestroy,
   OnInit,
+  ViewChild,
 } from '@angular/core';
+import { ActiveCartFacade, OrderEntry } from '@spartacus/cart/base/root';
 import {
   CmsQuickOrderComponent,
   QuickOrderStatePersistenceService,
@@ -13,14 +21,14 @@ import {
   QuickOrderFacade,
 } from '@spartacus/cart/quick-order/root';
 import {
-  ActiveCartService,
   GlobalMessageService,
   GlobalMessageType,
-  OrderEntry,
+  Product,
 } from '@spartacus/core';
 import { CmsComponentData } from '@spartacus/storefront';
 import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
-import { first, map } from 'rxjs/operators';
+import { first, map, tap } from 'rxjs/operators';
+import { QuickOrderFormComponent } from './form/quick-order-form.component';
 
 @Component({
   selector: 'cx-quick-order',
@@ -31,19 +39,34 @@ export class QuickOrderComponent implements OnInit, OnDestroy {
   cartId$: Observable<string>;
   entries$: Observable<OrderEntry[]>;
   quickOrderListLimit$: Observable<number | undefined> =
-    this.component.data$.pipe(map((data) => data.quickOrderListLimit));
+    this.component.data$.pipe(
+      map((data) => data.quickOrderListLimit),
+      tap((limit) => {
+        if (!!limit) {
+          this.quickOrderService.setListLimit(limit);
+        }
+      })
+    );
   isCartStable$: Observable<boolean> = combineLatest([
     this.activeCartService.getActiveCartId(),
     this.activeCartService.isStable(),
   ]).pipe(map(([activeCartId, isStable]) => (!activeCartId ? true : isStable)));
   globalMessageType = GlobalMessageType;
+  listLimitReached$: Observable<boolean>;
 
-  private cartErrors$ = new BehaviorSubject<QuickOrderAddEntryEvent[]>([]);
-  private cartWarnings$ = new BehaviorSubject<QuickOrderAddEntryEvent[]>([]);
-  private cartSuccesses$ = new BehaviorSubject<OrderEntry[]>([]);
+  @ViewChild('quickOrderForm')
+  quickOrderForm: QuickOrderFormComponent;
+
+  protected cartErrors$ = new BehaviorSubject<QuickOrderAddEntryEvent[]>([]);
+  protected cartWarnings$ = new BehaviorSubject<QuickOrderAddEntryEvent[]>([]);
+  protected cartSuccesses$ = new BehaviorSubject<OrderEntry[]>([]);
+  protected showAddToCartInformation$ = new BehaviorSubject<boolean>(false);
+  protected nonPurchasableProductError$ = new BehaviorSubject<Product | null>(
+    null
+  );
 
   constructor(
-    protected activeCartService: ActiveCartService,
+    protected activeCartService: ActiveCartFacade,
     protected component: CmsComponentData<CmsQuickOrderComponent>,
     protected globalMessageService: GlobalMessageService,
     protected quickOrderService: QuickOrderFacade,
@@ -71,6 +94,15 @@ export class QuickOrderComponent implements OnInit, OnDestroy {
   get successes$(): Observable<OrderEntry[]> {
     return this.cartSuccesses$.asObservable();
   }
+
+  get nonPurchasableError$(): Observable<Product | null> {
+    return this.quickOrderService.getNonPurchasableProductError();
+  }
+
+  get addToCartInformation$(): Observable<boolean> {
+    return this.showAddToCartInformation$.asObservable();
+  }
+
   get softDeletedEntries$(): Observable<Record<string, OrderEntry>> {
     return this.quickOrderService.getSoftDeletedEntries();
   }
@@ -86,6 +118,11 @@ export class QuickOrderComponent implements OnInit, OnDestroy {
   }
 
   addToCart(orderEntries: OrderEntry[]): void {
+    if (!orderEntries.length) {
+      this.showAddToCartInformation$.next(true);
+      return;
+    }
+
     this.clearStatuses();
 
     this.quickOrderService
@@ -123,16 +160,28 @@ export class QuickOrderComponent implements OnInit, OnDestroy {
     this.cartSuccesses$.next([]);
   }
 
+  clearAddToCartInformation(): void {
+    this.showAddToCartInformation$.next(false);
+  }
+
   undoDeletion(entry: OrderEntry): void {
     if (entry.product?.code) {
-      this.quickOrderService.restoreSoftDeletedEntry(entry.product?.code);
+      this.quickOrderService.restoreSoftDeletedEntry(entry.product.code);
     }
   }
 
   clearDeletion(entry: OrderEntry): void {
     if (entry.product?.code) {
-      this.quickOrderService.hardDeleteEntry(entry.product?.code);
+      this.quickOrderService.hardDeleteEntry(entry.product.code);
     }
+  }
+
+  clearNonPurchasableError(): void {
+    this.quickOrderService.clearNonPurchasableProductError();
+  }
+
+  canAddProduct(): Observable<boolean> {
+    return this.quickOrderService.canAdd();
   }
 
   protected extractErrors(errors: QuickOrderAddEntryEvent[]): void {

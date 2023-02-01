@@ -1,12 +1,18 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { provideDefaultConfig } from '@spartacus/core';
 import {
   CmsPageGuard,
   HamburgerMenuModule,
-  LayoutConfig,
   PageLayoutComponent,
 } from '@spartacus/storefront';
+import { CpqConfiguratorLayoutModule } from './cpq-configurator-layout.module';
 import { defaultCpqInteractiveRoutingConfig } from './default-cpq-interactive-routing-config';
 
 /**
@@ -28,57 +34,8 @@ import { defaultCpqInteractiveRoutingConfig } from './default-cpq-interactive-ro
       },
     ]),
     HamburgerMenuModule,
+    CpqConfiguratorLayoutModule,
   ],
-  providers: [
-    provideDefaultConfig(defaultCpqInteractiveRoutingConfig),
-    provideDefaultConfig(<LayoutConfig>{
-      layoutSlots: {
-        CpqConfigurationTemplate: {
-          header: {
-            md: {
-              slots: [
-                'PreHeader',
-                'SiteContext',
-                'SiteLinks',
-                'SiteLogo',
-                'SearchBox',
-                'SiteLogin',
-                'MiniCart',
-              ],
-            },
-            xs: {
-              slots: ['PreHeader', 'SiteLogo', 'SearchBox', 'MiniCart'],
-            },
-          },
-
-          navigation: {
-            lg: { slots: [] },
-            slots: ['SiteLogin', 'SiteContext', 'SiteLinks', 'CpqConfigMenu'],
-          },
-
-          lg: {
-            slots: [
-              'CpqConfigHeader',
-              'CpqConfigBanner',
-              'CpqConfigMenu',
-              'CpqConfigContent',
-              'CpqConfigOverviewBanner',
-              'CpqConfigOverviewContent',
-              'CpqConfigBottombar',
-            ],
-          },
-
-          slots: [
-            'CpqConfigHeader',
-            'CpqConfigBanner',
-            'CpqConfigContent',
-            'CpqConfigOverviewBanner',
-            'CpqConfigOverviewContent',
-            'CpqConfigBottombar',
-          ],
-        },
-      },
-    }),
-  ],
+  providers: [provideDefaultConfig(defaultCpqInteractiveRoutingConfig)],
 })
 export class CpqConfiguratorInteractiveModule {}

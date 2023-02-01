@@ -1,7 +1,13 @@
 <ng-container *ngIf="paymentMethods$ | async as paymentMethods">
   <div class="cx-payment container">
     <div class="cx-header">
-      <h3>{{ 'paymentMethods.paymentMethods' | cxTranslate }}</h3>
+      <!-- TODO:(CXSPA-1695) for next major releasee remove below h3 tag and feature level check from the h2 tag-->
+      <h3 *cxFeatureLevel="'!5.1'">
+        {{ 'paymentMethods.paymentMethods' | cxTranslate }}
+      </h3>
+      <h2 *cxFeatureLevel="'5.1'">
+        {{ 'paymentMethods.paymentMethods' | cxTranslate }}
+      </h2>
     </div>
 
     <div class="cx-body">
@@ -12,13 +18,18 @@
       </div>
       <div *ngIf="loading$ | async; else cards"><cx-spinner></cx-spinner></div>
       <ng-template #cards>
+        <div
+          role="status"
+          [attr.aria-label]="'common.loaded' | cxTranslate"
+        ></div>
         <div class="cx-existing row">
           <div
             class="cx-payment-card col-sm-12 col-md-12 col-lg-6"
-            *ngFor="let paymentMethod of paymentMethods"
+            *ngFor="let paymentMethod of paymentMethods; let i = index"
           >
             <div class="cx-payment-inner">
               <cx-card
+                [index]="i"
                 [border]="true"
                 [fitToContainer]="true"
                 [content]="getCardContent(paymentMethod) | async"

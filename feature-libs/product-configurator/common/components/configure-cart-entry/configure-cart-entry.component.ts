@@ -1,5 +1,12 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { OrderEntry } from '@spartacus/core';
+import { Params } from '@angular/router';
+import { OrderEntry } from '@spartacus/cart/base/root';
 import { CommonConfigurator } from '../../core/model/common-configurator.model';
 import { CommonConfiguratorUtilsService } from '../../shared/utils/common-configurator-utils.service';
 
@@ -17,7 +24,7 @@ export class ConfigureCartEntryComponent {
   /**
    * Verifies whether the entry has any issues.
    *
-   * @returns {boolean} - whether there are any issues
+   * @returns - whether there are any issues
    */
   hasIssues(): boolean {
     return this.commonConfigUtilsService.hasIssues(this.cartEntry);
@@ -26,7 +33,7 @@ export class ConfigureCartEntryComponent {
   /**
    * Verifies whether the cart entry has an order code and returns a corresponding owner type.
    *
-   * @returns {CommonConfigurator.OwnerType} - an owner type
+   * @returns - an owner type
    */
   getOwnerType(): CommonConfigurator.OwnerType {
     return this.cartEntry.orderCode !== undefined
@@ -38,7 +45,7 @@ export class ConfigureCartEntryComponent {
    * Verifies whether the cart entry has an order code, retrieves a composed owner ID
    * and concatenates a corresponding entry number.
    *
-   * @returns {string} - an entry key
+   * @returns - an entry key
    */
   getEntityKey(): string {
     const entryNumber = this.cartEntry.entryNumber;
@@ -57,7 +64,7 @@ export class ConfigureCartEntryComponent {
   /**
    * Retrieves a corresponding route depending whether the configuration is read only or not.
    *
-   * @returns {string} - a route
+   * @returns - a route
    */
   getRoute(): string {
     const configuratorType = this.cartEntry.product?.configuratorType;
@@ -69,7 +76,7 @@ export class ConfigureCartEntryComponent {
   /**
    * Retrieves the state of the configuration.
    *
-   *  @returns {boolean} - 'true' if the configuration is read only, otherwise 'false'
+   *  @returns - 'true' if the configuration is read only, otherwise 'false'
    */
   getDisplayOnly(): boolean {
     return this.readOnly;
@@ -78,10 +85,32 @@ export class ConfigureCartEntryComponent {
   /**
    * Verifies whether the link to the configuration is disabled.
    *
-   *  @returns {boolean} - 'true' if the the configuration is not read only, otherwise 'false'
+   *  @returns - 'true' if the the configuration is not read only, otherwise 'false'
    */
   isDisabled() {
     return this.readOnly ? false : this.disabled;
+  }
+
+  /**
+   * Retrieves the additional resolve issues accessibility description.
+   *
+   * @returns - If there is a 'resolve issues' link, the ID to the element with additional description will be returned.
+   */
+  getResolveIssuesA11yDescription(): string | undefined {
+    const errorMsgId = 'cx-error-msg-' + this.cartEntry.entryNumber;
+    return !this.readOnly && this.msgBanner ? errorMsgId : undefined;
+  }
+
+  /**
+   * Compiles query parameters for the router link. 'resolveIssues' is only set if the component is
+   * rendered in the context of the message banner, and if issues exist at all
+   * @returns Query parameters
+   */
+  getQueryParams(): Params {
+    return {
+      forceReload: true,
+      resolveIssues: this.msgBanner && this.hasIssues(),
+    };
   }
 
   constructor(

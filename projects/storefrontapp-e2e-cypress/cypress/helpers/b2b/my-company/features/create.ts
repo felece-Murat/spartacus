@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { ENTITY_UID_COOKIE_KEY, MyCompanyConfig } from '../models/index';
 import {
   ignoreCaseSensivity,
@@ -13,13 +19,13 @@ export function createTest(config: MyCompanyConfig) {
     beforeEach(() => {
       loginAsMyCompanyAdmin();
 
-      cy.visit(`${config.baseUrl}${entityId ? '/' + entityId : ''}`);
       cy.intercept({
         method: 'GET',
         path: `**${config.apiEndpoint}**`,
       }).as('loadEntity');
+      cy.visit(`${config.baseUrl}${entityId ? '/' + entityId : ''}`);
       cy.get('cx-storefront').contains('Loading...').should('not.exist');
-      cy.wait('@loadEntity');
+      cy.wait('@loadEntity').its('response.statusCode').should('eq', 200);
     });
 
     after(() => {
@@ -43,7 +49,9 @@ export function createTest(config: MyCompanyConfig) {
 
       if (config.selectOptionsEndpoint) {
         config.selectOptionsEndpoint.forEach((endpoint) => {
-          cy.wait(`@getSelectOptionsFor${endpoint}`);
+          cy.wait(`@getSelectOptionsFor${endpoint}`)
+            .its('response.statusCode')
+            .should('eq', 200);
         });
       }
       completeForm(config.rows, FormType.CREATE);
@@ -64,7 +72,7 @@ export function createTest(config: MyCompanyConfig) {
           cy.setCookie(ENTITY_UID_COOKIE_KEY, entityUId);
         }
 
-        cy.wait('@loadEntityData');
+        cy.wait('@loadEntityData').its('response.statusCode').should('eq', 200);
         verifyDetails(config, FormType.CREATE);
         cy.get('cx-org-card cx-icon[type="CLOSE"]').click();
       });

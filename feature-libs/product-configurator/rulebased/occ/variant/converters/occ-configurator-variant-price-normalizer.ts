@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Injectable } from '@angular/core';
 import { Converter } from '@spartacus/core';
 import { ConfiguratorModelUtils } from '@spartacus/product-configurator/common';
@@ -16,9 +22,13 @@ export class OccConfiguratorVariantPriceNormalizer
     source.attributes?.forEach((attr) => {
       this.convertAttributeSupplements(attr, priceSupplements);
     });
+
+    //fine to build an incomplete configuratiom here,
+    //as we later on only take over the pricing related aspects
     const resultTarget: Configurator.Configuration = {
       ...target,
       configId: source.configId,
+      productCode: '',
       groups: [],
       flatGroups: [],
       owner: ConfiguratorModelUtils.createInitialOwner(),
@@ -34,7 +44,7 @@ export class OccConfiguratorVariantPriceNormalizer
     source: OccConfigurator.Supplements,
     priceSupplements: Configurator.AttributeSupplement[]
   ) {
-    let attributeSupplement: Configurator.AttributeSupplement = {
+    const attributeSupplement: Configurator.AttributeSupplement = {
       attributeUiKey: source?.csticUiKey,
       valueSupplements: [],
     };
@@ -49,7 +59,7 @@ export class OccConfiguratorVariantPriceNormalizer
     source: OccConfigurator.ValueSupplements,
     valueSupplements: Configurator.ValueSupplement[]
   ) {
-    let valueSupplement: Configurator.ValueSupplement = {
+    const valueSupplement: Configurator.ValueSupplement = {
       attributeValueKey: source?.attributeValueKey,
       priceValue: source?.priceValue,
       obsoletePriceValue: source?.obsoletePriceValue,

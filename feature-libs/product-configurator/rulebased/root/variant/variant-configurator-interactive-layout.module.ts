@@ -1,5 +1,10 @@
-import { NgModule } from '@angular/core';
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
+import { NgModule } from '@angular/core';
 import { provideDefaultConfig } from '@spartacus/core';
 import { LayoutConfig } from '@spartacus/storefront';
 
@@ -15,7 +20,7 @@ import { LayoutConfig } from '@spartacus/storefront';
       layoutSlots: {
         VariantConfigurationTemplate: {
           header: {
-            md: {
+            lg: {
               slots: [
                 'PreHeader',
                 'SiteLogo',
@@ -44,6 +49,7 @@ import { LayoutConfig } from '@spartacus/storefront';
               'VariantConfigMenu',
               'VariantConfigContent',
               'VariantConfigBottombar',
+              'VariantConfigVariantCarousel',
             ],
           },
 
@@ -51,6 +57,7 @@ import { LayoutConfig } from '@spartacus/storefront';
             'VariantConfigHeader',
             'VariantConfigContent',
             'VariantConfigBottombar',
+            'VariantConfigVariantCarousel',
           ],
         },
       },

@@ -1,7 +1,12 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Injectable } from '@angular/core';
-import { Order, RoutingService } from '@spartacus/core';
-import { OrderApproval } from '../../core/model/order-approval.model';
-import { OrderApprovalService } from '../../core/services/order-approval.service';
+import { RoutingService } from '@spartacus/core';
+import { Order } from '@spartacus/order/root';
 import { Observable } from 'rxjs';
 import {
   filter,
@@ -11,6 +16,8 @@ import {
   switchMap,
   tap,
 } from 'rxjs/operators';
+import { OrderApproval } from '../../core/model/order-approval.model';
+import { OrderApprovalService } from '../../core/services/order-approval.service';
 
 @Injectable({
   providedIn: 'root',
@@ -21,7 +28,7 @@ export class OrderApprovalDetailService {
     .pipe(map((routingData) => routingData.state.params.approvalCode));
 
   protected orderApproval$ = this.approvalCode$.pipe(
-    filter(Boolean),
+    filter((approvalCode) => Boolean(approvalCode)),
     tap((approvalCode: string) =>
       this.orderApprovalService.loadOrderApproval(approvalCode)
     ),
@@ -31,7 +38,9 @@ export class OrderApprovalDetailService {
     shareReplay({ bufferSize: 1, refCount: true })
   );
 
-  protected order$ = this.orderApproval$.pipe(pluck('order'));
+  protected order$: Observable<Order> = this.orderApproval$.pipe(
+    pluck('order')
+  );
 
   constructor(
     protected routingService: RoutingService,
@@ -58,7 +67,7 @@ export class OrderApprovalDetailService {
    * Returns the approval details that have been retrieved from the
    * approval code in the page url.
    */
-  getOrderApproval(): Observable<OrderApproval> {
+  getOrderApproval(): Observable<OrderApproval | undefined> {
     return this.orderApproval$;
   }
 }

@@ -14,11 +14,16 @@ import { Configurator } from '../../../../core/model/configurator.model';
 import { ConfiguratorPriceComponentOptions } from '../../../price/configurator-price.component';
 import { ConfiguratorStorefrontUtilsService } from '../../../service/configurator-storefront-utils.service';
 import { ConfiguratorAttributeQuantityComponentOptions } from '../../quantity/configurator-attribute-quantity.component';
+import { ConfiguratorAttributeInputFieldComponent } from '../input-field/configurator-attribute-input-field.component';
+import { ConfiguratorAttributeNumericInputFieldComponent } from '../numeric-input-field/configurator-attribute-numeric-input-field.component';
 import { ConfiguratorAttributeRadioButtonComponent } from './configurator-attribute-radio-button.component';
+
+const VALUE_NAME_2 = 'val2';
 
 function createValue(code: string, name: string, isSelected: boolean) {
   const value: Configurator.Value = {
     valueCode: code,
+    valueDisplay: name,
     name: name,
     selected: isSelected,
   };
@@ -55,12 +60,12 @@ describe('ConfigAttributeRadioButtonComponent', () => {
   let htmlElem: HTMLElement;
   let fixture: ComponentFixture<ConfiguratorAttributeRadioButtonComponent>;
   const ownerKey = 'theOwnerKey';
-  const name = 'theName';
+  const name = 'attributeName';
   const groupId = 'theGroupId';
   const initialSelectedValue = 'initialSelectedValue';
 
   const value1 = createValue('1', 'val1', true);
-  const value2 = createValue('2', 'val2', false);
+  const value2 = createValue('2', VALUE_NAME_2, false);
   const value3 = createValue('3', 'val3', false);
 
   const values: Configurator.Value[] = [value1, value2, value3];
@@ -70,6 +75,8 @@ describe('ConfigAttributeRadioButtonComponent', () => {
       TestBed.configureTestingModule({
         declarations: [
           ConfiguratorAttributeRadioButtonComponent,
+          ConfiguratorAttributeInputFieldComponent,
+          ConfiguratorAttributeNumericInputFieldComponent,
           ItemCounterComponent,
           MockFocusDirective,
           MockConfiguratorAttributeQuantityComponent,
@@ -102,6 +109,7 @@ describe('ConfigAttributeRadioButtonComponent', () => {
 
     component.attribute = {
       name: name,
+      label: name,
       attrCode: 444,
       uiType: Configurator.UiType.RADIOBUTTON,
       selectedSingleValue: initialSelectedValue,
@@ -207,6 +215,76 @@ describe('ConfigAttributeRadioButtonComponent', () => {
         expect,
         htmlElem,
         'cx-configurator-price'
+      );
+    });
+  });
+
+  describe('Accessibility', () => {
+    it("should contain input element with class name 'form-check-input' and 'aria-label' attribute that defines an accessible name to label the current element", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'input',
+        'form-check-input',
+        1,
+        'aria-label',
+        'configurator.a11y.selectedValueOfAttributeFull attribute:' +
+          component.attribute.label +
+          ' value:' +
+          VALUE_NAME_2
+      );
+    });
+
+    it("should contain input element with class name 'form-check-input' and 'aria-describedby' attribute that indicates the ID of the element that describe the elements", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'input',
+        'form-check-input',
+        1,
+        'aria-describedby',
+        'cx-configurator--label--attributeName'
+      );
+    });
+
+    it("should contain label element with class name 'form-check-label' and 'aria-hidden' attribute that removes label from the accessibility tree", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'label',
+        'form-check-label',
+        1,
+        'aria-hidden',
+        'true',
+        VALUE_NAME_2
+      );
+    });
+  });
+
+  describe('Rendering for additional value', () => {
+    it('should provide input field for alpha numeric value ', () => {
+      component.attribute.uiType =
+        Configurator.UiType.RADIOBUTTON_ADDITIONAL_INPUT;
+      component.attribute.validationType = Configurator.ValidationType.NONE;
+      fixture.detectChanges();
+      htmlElem = fixture.nativeElement;
+      CommonConfiguratorTestUtilsService.expectElementPresent(
+        expect,
+        htmlElem,
+        'cx-configurator-attribute-input-field'
+      );
+    });
+
+    it('should provide input field for numeric value ', () => {
+      component.attribute.uiType =
+        Configurator.UiType.RADIOBUTTON_ADDITIONAL_INPUT;
+      component.attribute.validationType = Configurator.ValidationType.NUMERIC;
+      fixture.detectChanges();
+      htmlElem = fixture.nativeElement;
+      CommonConfiguratorTestUtilsService.expectElementPresent(
+        expect,
+        htmlElem,
+        'cx-configurator-attribute-numeric-input-field'
       );
     });
   });

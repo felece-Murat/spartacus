@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,16 +12,22 @@ import {
   OnDestroy,
   OnInit,
 } from '@angular/core';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
 import {
-  DeleteSavedCartEvent,
-  DeleteSavedCartFailEvent,
-  DeleteSavedCartSuccessEvent,
+  UntypedFormControl,
+  UntypedFormGroup,
+  Validators,
+} from '@angular/forms';
+import {
+  Cart,
+  DeleteCartEvent as DeleteSavedCartEvent,
+  DeleteCartFailEvent as DeleteSavedCartFailEvent,
+  DeleteCartSuccessEvent as DeleteSavedCartSuccessEvent,
+} from '@spartacus/cart/base/root';
+import {
   SavedCartFacade,
   SavedCartFormType,
 } from '@spartacus/cart/saved-cart/root';
 import {
-  Cart,
   EventService,
   GlobalMessageService,
   GlobalMessageType,
@@ -23,6 +35,7 @@ import {
 } from '@spartacus/core';
 import {
   FocusConfig,
+  FormUtils,
   ICON_TYPE,
   LaunchDialogService,
 } from '@spartacus/storefront';
@@ -42,7 +55,7 @@ export interface SavedCartFormDialogOptions {
 export class SavedCartFormDialogComponent implements OnInit, OnDestroy {
   private subscription = new Subscription();
   savedCartFormType = SavedCartFormType;
-  form: FormGroup;
+  form: UntypedFormGroup;
   iconTypes = ICON_TYPE;
   cart: Cart;
   layoutOption: string | undefined;
@@ -140,29 +153,34 @@ export class SavedCartFormDialogComponent implements OnInit, OnDestroy {
   }
 
   saveOrEditCart(cartId: string): void {
-    const name = this.form.get('name')?.value;
-    // TODO(#12660): Remove default value once backend is updated
-    const description = this.form.get('description')?.value || '-';
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      FormUtils.deepUpdateValueAndValidity(this.form);
+    } else {
+      const name = this.form.get('name')?.value;
+      // TODO(#12660): Remove default value once backend is updated
+      const description = this.form.get('description')?.value || '-';
 
-    switch (this.layoutOption) {
-      case SavedCartFormType.SAVE: {
-        this.savedCartService.saveCart({
-          cartId,
-          saveCartName: name,
-          saveCartDescription: description,
-        });
+      switch (this.layoutOption) {
+        case SavedCartFormType.SAVE: {
+          this.savedCartService.saveCart({
+            cartId,
+            saveCartName: name,
+            saveCartDescription: description,
+          });
 
-        break;
-      }
+          break;
+        }
 
-      case SavedCartFormType.EDIT: {
-        this.savedCartService.editSavedCart({
-          cartId,
-          saveCartName: name,
-          saveCartDescription: description,
-        });
+        case SavedCartFormType.EDIT: {
+          this.savedCartService.editSavedCart({
+            cartId,
+            saveCartName: name,
+            saveCartDescription: description,
+          });
 
-        break;
+          break;
+        }
       }
     }
   }
@@ -253,20 +271,22 @@ export class SavedCartFormDialogComponent implements OnInit, OnDestroy {
   }
 
   protected build(cart?: Cart) {
-    const form = new FormGroup({});
+    const form = new UntypedFormGroup({});
     form.setControl(
       'name',
-      new FormControl('', [
+      new UntypedFormControl('', [
         Validators.required,
         Validators.maxLength(this.nameMaxLength),
       ])
     );
     form.setControl(
       'description',
-      new FormControl('', [Validators.maxLength(this.descriptionMaxLength)])
+      new UntypedFormControl('', [
+        Validators.maxLength(this.descriptionMaxLength),
+      ])
     );
-    form.setControl('isCloneSavedCart', new FormControl(''));
-    form.setControl('cloneName', new FormControl(''));
+    form.setControl('isCloneSavedCart', new UntypedFormControl(''));
+    form.setControl('cloneName', new UntypedFormControl(''));
     this.form = form;
     this.patchData(cart);
   }

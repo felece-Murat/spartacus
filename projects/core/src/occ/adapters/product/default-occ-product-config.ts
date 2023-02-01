@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { ProductScope } from '../../../product/model/product-scope';
 import { OccConfig } from '../../config/occ-config';
 
@@ -12,6 +18,8 @@ export const defaultOccProductConfig: OccConfig = {
           details:
             'products/${productCode}?fields=averageRating,stock(DEFAULT),description,availableForPickup,code,url,price(DEFAULT),numberOfReviews,manufacturer,categories(FULL),priceRange,multidimensional,tags,images(FULL)',
           attributes: 'products/${productCode}?fields=classifications',
+          price: 'products/${productCode}?fields=price(formattedValue)',
+          stock: 'products/${productCode}?fields=stock(DEFAULT)',
         },
 
         productReviews: 'products/${productCode}/reviews',
@@ -22,7 +30,7 @@ export const defaultOccProductConfig: OccConfig = {
           'products/${productCode}/references?fields=DEFAULT,references(target(images(FULL)))',
         /* eslint-disable max-len */
         productSearch:
-          'products/search?fields=products(code,name,summary,configurable,configuratorType,price(FULL),images(DEFAULT),stock(FULL),averageRating,variantOptions),facets,breadcrumbs,pagination(DEFAULT),sorts(DEFAULT),freeTextSearch,currentQuery',
+          'products/search?fields=products(code,name,summary,configurable,configuratorType,multidimensional,price(FULL),images(DEFAULT),stock(FULL),averageRating,variantOptions),facets,breadcrumbs,pagination(DEFAULT),sorts(DEFAULT),freeTextSearch,currentQuery',
         /* eslint-enable */
         productSuggestions: 'products/suggestions',
       },

@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import {
   HttpErrorResponse,
   HttpEvent,
@@ -5,17 +11,21 @@ import {
   HttpInterceptor,
   HttpRequest,
 } from '@angular/common/http';
-import { Inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, shareReplay } from 'rxjs/operators';
+import { UnifiedInjector } from '../../lazy-loading/unified-injector';
 import { resolveApplicable } from '../../util/applicable';
+import { getLastValueSync } from '../../util/rxjs/get-last-value-sync';
 import { HttpErrorHandler } from './handlers/http-error.handler';
 
 @Injectable({ providedIn: 'root' })
 export class HttpErrorInterceptor implements HttpInterceptor {
-  constructor(
-    @Inject(HttpErrorHandler) protected handlers: HttpErrorHandler[]
-  ) {}
+  constructor(protected unifiedInjector: UnifiedInjector) {}
+
+  protected handlers$: Observable<HttpErrorHandler[]> = this.unifiedInjector
+    .getMulti(HttpErrorHandler)
+    .pipe(shareReplay(1));
 
   intercept(
     request: HttpRequest<any>,
@@ -25,8 +35,8 @@ export class HttpErrorInterceptor implements HttpInterceptor {
       catchError((response: any) => {
         if (response instanceof HttpErrorResponse) {
           this.handleErrorResponse(request, response);
-          return throwError(response);
         }
+        return throwError(response);
       })
     );
   }
@@ -45,7 +55,11 @@ export class HttpErrorInterceptor implements HttpInterceptor {
    * return the error handler that matches the `HttpResponseStatus` code.
    * If no handler is available, the UNKNOWN handler is returned.
    */
-  protected getResponseHandler(response: HttpErrorResponse): HttpErrorHandler {
-    return resolveApplicable(this.handlers, [response]);
+  protected getResponseHandler(
+    response: HttpErrorResponse
+  ): HttpErrorHandler | undefined {
+    return resolveApplicable(getLastValueSync(this.handlers$) ?? [], [
+      response,
+    ]);
   }
 }

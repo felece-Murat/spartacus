@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,12 +13,8 @@ import {
   ViewChild,
   ViewContainerRef,
 } from '@angular/core';
-import {
-  ActiveCartService,
-  AuthService,
-  Cart,
-  RoutingService,
-} from '@spartacus/core';
+import { ActiveCartFacade, Cart } from '@spartacus/cart/base/root';
+import { AuthService, RoutingService } from '@spartacus/core';
 import { LaunchDialogService, LAUNCH_CALLER } from '@spartacus/storefront';
 import { combineLatest, Observable, Subscription } from 'rxjs';
 import { map, take, tap } from 'rxjs/operators';
@@ -30,8 +32,13 @@ export class AddToSavedCartComponent implements OnInit, OnDestroy {
 
   cart$: Observable<Cart>;
 
+  /**
+   * Whether to show the "Save cart for later" button. Contingent on whether there are actual entries to save.
+   */
+  disableSaveCartForLater$: Observable<boolean>;
+
   constructor(
-    protected activeCartService: ActiveCartService,
+    protected activeCartFacade: ActiveCartFacade,
     protected authService: AuthService,
     protected routingService: RoutingService,
     protected vcr: ViewContainerRef,
@@ -40,11 +47,15 @@ export class AddToSavedCartComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cart$ = combineLatest([
-      this.activeCartService.getActive(),
+      this.activeCartFacade.getActive(),
       this.authService.isUserLoggedIn(),
     ]).pipe(
       tap(([_, loggedIn]) => (this.loggedIn = loggedIn)),
       map(([activeCart]) => activeCart)
+    );
+
+    this.disableSaveCartForLater$ = this.cart$.pipe(
+      map((cart) => !cart.entries?.length)
     );
   }
 

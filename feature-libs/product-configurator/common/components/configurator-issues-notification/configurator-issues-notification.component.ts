@@ -1,7 +1,13 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Component, Optional } from '@angular/core';
-import { FormControl } from '@angular/forms';
-import { OrderEntry } from '@spartacus/core';
-import { CartItemContext, ICON_TYPE } from '@spartacus/storefront';
+import { UntypedFormControl } from '@angular/forms';
+import { CartItemContext, OrderEntry } from '@spartacus/cart/base/root';
+import { ICON_TYPE } from '@spartacus/storefront';
 import { EMPTY, Observable } from 'rxjs';
 import { CommonConfiguratorUtilsService } from '../../shared/utils/common-configurator-utils.service';
 
@@ -20,7 +26,7 @@ export class ConfiguratorIssuesNotificationComponent {
   readonly orderEntry$: Observable<OrderEntry> =
     this.cartItemContext?.item$ ?? EMPTY;
 
-  readonly quantityControl$: Observable<FormControl> =
+  readonly quantityControl$: Observable<UntypedFormControl> =
     this.cartItemContext?.quantityControl$ ?? EMPTY;
 
   readonly readonly$: Observable<boolean> =
@@ -33,8 +39,8 @@ export class ConfiguratorIssuesNotificationComponent {
   /**
    * Verifies whether the item has any issues.
    *
-   * @param {OrderEntry} item - Cart item
-   * @returns {boolean} - whether there are any issues
+   * @param item - Cart item
+   * @returns - whether there are any issues
    */
   hasIssues(item: OrderEntry): boolean {
     return this.commonConfigUtilsService.hasIssues(item);
@@ -43,10 +49,20 @@ export class ConfiguratorIssuesNotificationComponent {
   /**
    * Retrieves the number of issues at the cart item.
    *
-   * @param {OrderEntry} item - Cart item
-   * @returns {number} - the number of issues at the cart item
+   * @param item - Cart item
+   * @returns - the number of issues at the cart item
    */
   getNumberOfIssues(item: OrderEntry): number {
     return this.commonConfigUtilsService.getNumberOfIssues(item);
+  }
+
+  /**
+   * Retrieves the unique id for the error message.
+   *
+   * @param item - Cart item
+   * @returns - Unique id for error message
+   */
+  getErrorMessageId(item: OrderEntry): string {
+    return 'cx-error-msg-' + item.entryNumber;
   }
 }

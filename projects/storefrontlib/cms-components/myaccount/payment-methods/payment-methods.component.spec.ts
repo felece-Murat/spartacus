@@ -2,6 +2,9 @@ import { Component, DebugElement, Input } from '@angular/core';
 import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
+  FeaturesConfig,
+  FeaturesConfigModule,
+  GlobalMessageService,
   I18nTestingModule,
   PaymentDetails,
   UserPaymentService,
@@ -10,6 +13,10 @@ import { Observable, of } from 'rxjs';
 import { ICON_TYPE } from '../../../cms-components/misc/icon';
 import { CardComponent } from '../../../shared/components/card/card.component';
 import { PaymentMethodsComponent } from './payment-methods.component';
+
+class MockGlobalMessageService {
+  add = jasmine.createSpy();
+}
 
 @Component({
   template: '<div>Spinner</div>',
@@ -34,7 +41,7 @@ const mockPayment: PaymentDetails = {
   template: '',
 })
 class MockCxIconComponent {
-  @Input() type;
+  @Input() type: ICON_TYPE;
 }
 
 class MockUserPaymentService {
@@ -58,7 +65,7 @@ describe('PaymentMethodsComponent', () => {
   beforeEach(
     waitForAsync(() => {
       TestBed.configureTestingModule({
-        imports: [I18nTestingModule],
+        imports: [I18nTestingModule, FeaturesConfigModule],
         declarations: [
           PaymentMethodsComponent,
           MockCxSpinnerComponent,
@@ -67,6 +74,13 @@ describe('PaymentMethodsComponent', () => {
         ],
         providers: [
           { provide: UserPaymentService, useClass: MockUserPaymentService },
+          { provide: GlobalMessageService, useClass: MockGlobalMessageService },
+          {
+            provide: FeaturesConfig,
+            useValue: {
+              features: { level: '5.1' },
+            },
+          },
         ],
       }).compileComponents();
     })
@@ -81,6 +95,13 @@ describe('PaymentMethodsComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should display header', () => {
+    fixture.detectChanges();
+    expect(el.query(By.css('h2')).nativeElement.innerText).toEqual(
+      'paymentMethods.paymentMethods'
+    );
   });
 
   it('should show basic information', () => {
@@ -177,7 +198,7 @@ describe('PaymentMethodsComponent', () => {
         .textContent;
     }
     function getDeleteButton(elem: DebugElement): any {
-      return elem.query(By.css('cx-card .card-link')).nativeElement;
+      return elem.query(By.css('cx-card .link')).nativeElement;
     }
     function getCancelButton(elem: DebugElement): DebugElement {
       return elem.query(By.css('cx-card .btn-secondary'));
@@ -197,7 +218,7 @@ describe('PaymentMethodsComponent', () => {
     spyOn(userService, 'deletePaymentMethod').and.stub();
 
     function getDeleteButton(elem: DebugElement): any {
-      return elem.query(By.css('cx-card .card-link')).nativeElement;
+      return elem.query(By.css('cx-card .link')).nativeElement;
     }
     function getConfirmButton(elem: DebugElement): DebugElement {
       return elem.query(By.css('cx-card .btn-primary'));
@@ -221,7 +242,7 @@ describe('PaymentMethodsComponent', () => {
     spyOn(userService, 'setPaymentMethodAsDefault').and.stub();
 
     function getSetDefaultButton(elem: DebugElement): any {
-      return elem.queryAll(By.css('cx-card .card-link'))[1].nativeElement;
+      return elem.queryAll(By.css('cx-card .link'))[1].nativeElement;
     }
     component.ngOnInit();
     fixture.detectChanges();

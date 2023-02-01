@@ -1,7 +1,7 @@
 import { Type } from '@angular/core';
 import { TestBed, waitForAsync } from '@angular/core/testing';
 import { Store, StoreModule } from '@ngrx/store';
-import { ActiveCartService } from '@spartacus/core';
+import { ActiveCartFacade } from '@spartacus/cart/base/root';
 import { ConfiguratorModelUtils } from '@spartacus/product-configurator/common';
 import { Observable, of } from 'rxjs';
 import {
@@ -9,6 +9,7 @@ import {
   GROUP_ID_1,
   GROUP_ID_2,
   GROUP_ID_4,
+  GROUP_ID_CONFLICT_3,
   productConfiguration,
   productConfigurationWithConflicts,
 } from '../../testing/configurator-test-data';
@@ -21,6 +22,15 @@ import { ConfiguratorCommonsService } from './configurator-commons.service';
 import { ConfiguratorGroupStatusService } from './configurator-group-status.service';
 import { ConfiguratorGroupsService } from './configurator-groups.service';
 import { ConfiguratorUtilsService } from './utils/configurator-utils.service';
+
+const PRODUCT_CONFIG_CURRENT_GROUP_IS_CONFLICT: Configurator.Configuration = {
+  ...productConfigurationWithConflicts,
+  interactionState: {
+    ...productConfigurationWithConflicts.interactionState,
+    currentGroup: GROUP_ID_CONFLICT_3,
+    isConflictResolutionMode: true,
+  },
+};
 
 class MockActiveCartService {}
 class MockConfiguratorCartService {
@@ -46,7 +56,7 @@ describe('ConfiguratorGroupsService', () => {
           ConfiguratorGroupStatusService,
           ConfiguratorUtilsService,
           {
-            provide: ActiveCartService,
+            provide: ActiveCartFacade,
             useClass: MockActiveCartService,
           },
           {
@@ -223,21 +233,6 @@ describe('ConfiguratorGroupsService', () => {
   });
 
   describe('getPreviousGroupId', () => {
-    it('should return null', (done) => {
-      spyOn(configuratorCommonsService, 'getConfiguration').and.returnValue(
-        of(undefined)
-      );
-      const currentGroup = classUnderTest.getPreviousGroupId(
-        productConfiguration.owner
-      );
-
-      expect(currentGroup).toBeDefined();
-      currentGroup.subscribe((groupId) => {
-        expect(groupId).toBeUndefined();
-        done();
-      });
-    });
-
     it('should return a previous group ID', (done) => {
       spyOn(configuratorCommonsService, 'getConfiguration').and.returnValue(
         of(productConfiguration)
@@ -314,7 +309,7 @@ describe('ConfiguratorGroupsService', () => {
   });
 
   describe('navigateToConflictSolver', () => {
-    it('should go to conflict solver', () => {
+    it('should trigger change group action in case conflict group deviates from current one', () => {
       spyOn(configuratorCommonsService, 'getConfiguration').and.returnValue(
         of(productConfigurationWithConflicts)
       );
@@ -327,6 +322,24 @@ describe('ConfiguratorGroupsService', () => {
           configuration: productConfigurationWithConflicts,
           groupId: productConfigurationWithConflicts.flatGroups[0].id,
           parentGroupId: productConfigurationWithConflicts.groups[0].id,
+          conflictResolutionMode: true,
+        })
+      );
+    });
+    it('should also trigger change group action in case current group is already the first conflict group because group menu component relies on interactionState.issueNavigationDone', () => {
+      spyOn(configuratorCommonsService, 'getConfiguration').and.returnValue(
+        of(PRODUCT_CONFIG_CURRENT_GROUP_IS_CONFLICT)
+      );
+      classUnderTest.navigateToConflictSolver(
+        PRODUCT_CONFIG_CURRENT_GROUP_IS_CONFLICT.owner
+      );
+
+      expect(store.dispatch).toHaveBeenCalledWith(
+        new ConfiguratorActions.ChangeGroup({
+          configuration: PRODUCT_CONFIG_CURRENT_GROUP_IS_CONFLICT,
+          groupId: PRODUCT_CONFIG_CURRENT_GROUP_IS_CONFLICT.flatGroups[0].id,
+          parentGroupId: PRODUCT_CONFIG_CURRENT_GROUP_IS_CONFLICT.groups[0].id,
+          conflictResolutionMode: true,
         })
       );
     });
@@ -353,6 +366,7 @@ describe('ConfiguratorGroupsService', () => {
           configuration: productConfiguration,
           groupId: productConfiguration.flatGroups[0].id,
           parentGroupId: undefined,
+          conflictResolutionMode: false,
         })
       );
     });

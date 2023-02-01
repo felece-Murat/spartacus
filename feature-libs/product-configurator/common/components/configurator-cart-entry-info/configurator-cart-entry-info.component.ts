@@ -1,7 +1,12 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Component, Optional } from '@angular/core';
-import { FormControl } from '@angular/forms';
-import { OrderEntry } from '@spartacus/core';
-import { CartItemContext } from '@spartacus/storefront';
+import { UntypedFormControl } from '@angular/forms';
+import { CartItemContext, OrderEntry } from '@spartacus/cart/base/root';
 import { EMPTY, Observable } from 'rxjs';
 import { CommonConfiguratorUtilsService } from '../../shared/utils/common-configurator-utils.service';
 
@@ -18,7 +23,7 @@ export class ConfiguratorCartEntryInfoComponent {
   readonly orderEntry$: Observable<OrderEntry> =
     this.cartItemContext?.item$ ?? EMPTY;
 
-  readonly quantityControl$: Observable<FormControl> =
+  readonly quantityControl$: Observable<UntypedFormControl> =
     this.cartItemContext?.quantityControl$ ?? EMPTY;
 
   readonly readonly$: Observable<boolean> =
@@ -36,11 +41,10 @@ export class ConfiguratorCartEntryInfoComponent {
    * @returns {boolean} - whether the status of configuration infos entry has status
    */
   hasStatus(item: OrderEntry): boolean {
-    const configurationInfos = item?.configurationInfos;
+    const configurationInfos = item.configurationInfos;
 
     return configurationInfos
-      ? configurationInfos.length > 0 &&
-          configurationInfos[0]?.status !== 'NONE'
+      ? configurationInfos.length > 0 && configurationInfos[0].status !== 'NONE'
       : false;
   }
 
@@ -53,11 +57,14 @@ export class ConfiguratorCartEntryInfoComponent {
   isAttributeBasedConfigurator(item: OrderEntry): boolean {
     const configurationInfos = item.configurationInfos;
 
-    const attributeBased = configurationInfos
+    return configurationInfos
       ? this.commonConfigUtilsService.isAttributeBasedConfigurator(
           configurationInfos[0]?.configuratorType
         )
       : false;
-    return attributeBased ? attributeBased : false;
+  }
+
+  getHiddenConfigurationInfoId(index: number): string {
+    return 'cx-configuration-hidden-info-' + index.toString();
   }
 }

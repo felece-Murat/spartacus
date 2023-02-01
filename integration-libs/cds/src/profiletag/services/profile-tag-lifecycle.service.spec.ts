@@ -5,12 +5,8 @@ import {
   Router,
 } from '@angular/router';
 import { Action, ActionsSubject } from '@ngrx/store';
-import {
-  ActiveCartService,
-  AuthActions,
-  Cart,
-  ConsentService,
-} from '@spartacus/core';
+import { ActiveCartFacade, Cart } from '@spartacus/cart/base/root';
+import { AuthActions, ConsentService } from '@spartacus/core';
 import { BehaviorSubject, ReplaySubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import { CdsConfig } from '../../config';
@@ -33,7 +29,7 @@ describe('profileTagLifecycleService', () => {
     },
   };
   function setVariables() {
-    getConsentBehavior = new BehaviorSubject<Object>(null);
+    getConsentBehavior = new BehaviorSubject<Object>(undefined);
     isConsentGivenValue = false;
     routerEventsBehavior = new BehaviorSubject<NgRouterEvent>(
       new NavigationStart(0, 'test.com', 'popstate')
@@ -61,7 +57,7 @@ describe('profileTagLifecycleService', () => {
           useValue: consentsService,
         },
         {
-          provide: ActiveCartService,
+          provide: ActiveCartFacade,
           useValue: activeCartService,
         },
         {

@@ -1,4 +1,16 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { DirectionMode, DirectionService } from '@spartacus/storefront';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Input,
+  Optional,
+} from '@angular/core';
 import { Configurator } from '../../core/model/configurator.model';
 
 export interface ConfiguratorPriceComponentOptions {
@@ -16,16 +28,68 @@ export interface ConfiguratorPriceComponentOptions {
 export class ConfiguratorPriceComponent {
   @Input() formula: ConfiguratorPriceComponentOptions;
 
+  //TODO(CXSPA-1014): make DirectionService a required dependency
+  constructor(
+    // eslint-disable-next-line @typescript-eslint/unified-signatures
+    directionService: DirectionService
+  );
+  constructor(
+    @Optional()
+    protected directionService?: DirectionService
+  ) {}
+
+  protected isRTLDirection(): boolean {
+    return this.directionService?.getDirection() === DirectionMode.RTL;
+  }
+
+  protected removeSign(value: string | undefined, sign: string): string {
+    if (value) {
+      return value.replace(sign, '');
+    }
+    return '';
+  }
+
+  protected addSign(
+    value: string | undefined,
+    sign: string,
+    before: boolean
+  ): string {
+    if (value) {
+      return before ? sign + value : value + sign;
+    }
+    return '';
+  }
+
+  protected compileFormattedValue(
+    priceValue: number,
+    formattedValue: string | undefined,
+    isRTL: boolean
+  ): string {
+    if (priceValue > 0) {
+      return this.addSign(formattedValue, '+', !isRTL);
+    } else {
+      if (isRTL) {
+        const withoutSign = this.removeSign(formattedValue, '-');
+        return this.addSign(withoutSign, '-', false);
+      }
+      return formattedValue ?? '';
+    }
+  }
+
   /**
    * Retrieves price.
    *
    * @return {string} - value price formula
    */
   get price(): string {
-    if (this.formula?.priceTotal) {
+    if (this.formula.priceTotal) {
       return this.priceTotal;
     } else {
-      return '+ ' + this.formula?.price?.formattedValue;
+      return this.compileFormattedValue(
+        this.formula.price?.value ?? 0,
+        this.formula.price?.formattedValue,
+        this.isRTLDirection()
+      );
     }
   }
 
@@ -35,7 +99,11 @@ export class ConfiguratorPriceComponent {
    * @return {string} - total price formula
    */
   get priceTotal(): string {
-    return '+ ' + this.formula?.priceTotal?.formattedValue;
+    return this.compileFormattedValue(
+      this.formula.priceTotal?.value ?? 0,
+      this.formula.priceTotal?.formattedValue,
+      this.isRTLDirection()
+    );
   }
 
   /**
@@ -69,9 +137,9 @@ export class ConfiguratorPriceComponent {
    */
   displayFormula(): boolean {
     const displayFormula =
-      (this.formula?.quantity && this.formula?.quantity !== 0) ||
-      (this.formula?.price && this.formula?.price?.value !== 0) ||
-      (this.formula?.priceTotal && this.formula?.priceTotal?.value !== 0);
+      (this.formula.quantity && this.formula.quantity !== 0) ||
+      (this.formula.price && this.formula.price?.value !== 0) ||
+      (this.formula.priceTotal && this.formula.priceTotal?.value !== 0);
     return displayFormula ?? false;
   }
 
@@ -82,7 +150,7 @@ export class ConfiguratorPriceComponent {
    * @return {string} - price formula
    */
   quantityWithPrice(formattedQuantity: string | null): string {
-    return formattedQuantity + 'x(' + this.formula?.price?.formattedValue + ')';
+    return formattedQuantity + 'x(' + this.formula.price?.formattedValue + ')';
   }
 
   /**

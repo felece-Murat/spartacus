@@ -1,10 +1,13 @@
-import { Directive, Input, Pipe, PipeTransform } from '@angular/core';
+import { Pipe, PipeTransform } from '@angular/core';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
-import { I18nTestingModule, OrderEntry } from '@spartacus/core';
-import { ModalDirective } from '@spartacus/storefront';
-import { CommonConfigurator } from '../../core/model/common-configurator.model';
+import { OrderEntry } from '@spartacus/cart/base/root';
+import { I18nTestingModule } from '@spartacus/core';
+import {
+  CommonConfigurator,
+  OrderEntryStatus,
+} from '../../core/model/common-configurator.model';
 import { CommonConfiguratorTestUtilsService } from '../../testing/common-configurator-test-utils.service';
 import { ConfigureCartEntryComponent } from './configure-cart-entry.component';
 
@@ -13,13 +16,6 @@ import { ConfigureCartEntryComponent } from './configure-cart-entry.component';
 })
 class MockUrlPipe implements PipeTransform {
   transform(): any {}
-}
-
-@Directive({
-  selector: '[cxModal]',
-})
-class MockModalDirective implements Partial<ModalDirective> {
-  @Input() cxModal: any;
 }
 
 describe('ConfigureCartEntryComponent', () => {
@@ -33,11 +29,7 @@ describe('ConfigureCartEntryComponent', () => {
     waitForAsync(() => {
       TestBed.configureTestingModule({
         imports: [I18nTestingModule, RouterTestingModule, RouterModule],
-        declarations: [
-          ConfigureCartEntryComponent,
-          MockUrlPipe,
-          MockModalDirective,
-        ],
+        declarations: [ConfigureCartEntryComponent, MockUrlPipe],
       }).compileComponents();
     })
   );
@@ -199,6 +191,94 @@ describe('ConfigureCartEntryComponent', () => {
         expect,
         htmlElem,
         'label.disabled-link'
+      );
+    });
+  });
+
+  describe('getResolveIssuesA11yDescription', () => {
+    it("should return 'undefined' if the expected conditions are not met", () => {
+      component.readOnly = true;
+      component.msgBanner = true;
+      component.cartEntry = {
+        entryNumber: 0,
+        product: { configuratorType: configuratorType },
+      };
+      fixture.detectChanges();
+      expect(component.getResolveIssuesA11yDescription()).toBeUndefined();
+    });
+
+    it('should return ID for error message containing cart entry number for a HTML element if the expected conditions are met', () => {
+      component.readOnly = false;
+      component.msgBanner = true;
+      component.cartEntry = {
+        entryNumber: 0,
+        product: { configuratorType: configuratorType },
+      };
+      fixture.detectChanges();
+      expect(component.getResolveIssuesA11yDescription()).toEqual(
+        'cx-error-msg-0'
+      );
+    });
+  });
+
+  describe('getQueryParams', () => {
+    it('should set "forceReload" parameter', () => {
+      expect(component.getQueryParams().forceReload).toBe(true);
+    });
+    it('should not set "resolveIssues" parameter in case no issues exist', () => {
+      component.readOnly = false;
+      component.msgBanner = false;
+      component.cartEntry = {
+        entryNumber: 0,
+        product: { configuratorType: configuratorType },
+        statusSummaryList: [],
+      };
+      expect(component.getQueryParams().resolveIssues).toBe(false);
+    });
+    it('should set "resolveIssues" parameter in case issues exist', () => {
+      component.readOnly = false;
+      component.msgBanner = true;
+      component.cartEntry = {
+        entryNumber: 0,
+        product: { configuratorType: configuratorType },
+        statusSummaryList: [
+          { status: OrderEntryStatus.Error, numberOfIssues: 3 },
+        ],
+      };
+      expect(component.getQueryParams().resolveIssues).toBe(true);
+    });
+    it('should not set "resolveIssues" parameter in case issues exist but component is not rendered in the context of the resolve issues banner', () => {
+      component.readOnly = false;
+      component.msgBanner = false;
+      component.cartEntry = {
+        entryNumber: 0,
+        product: { configuratorType: configuratorType },
+        statusSummaryList: [
+          { status: OrderEntryStatus.Error, numberOfIssues: 3 },
+        ],
+      };
+      expect(component.getQueryParams().resolveIssues).toBe(false);
+    });
+  });
+
+  describe('Accessibility', () => {
+    it('should contain link element with ID for error message containing cart entry number and aria-describedby attribute that refers to the corresponding resolve issue message', function () {
+      component.readOnly = false;
+      component.msgBanner = true;
+      component.cartEntry = {
+        entryNumber: 0,
+        product: { configuratorType: configuratorType },
+      };
+      fixture.detectChanges();
+
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'a',
+        'cx-action-link',
+        undefined,
+        'aria-describedby',
+        'cx-error-msg-0'
       );
     });
   });

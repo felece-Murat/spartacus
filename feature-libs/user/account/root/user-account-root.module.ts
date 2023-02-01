@@ -1,10 +1,12 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { NgModule } from '@angular/core';
-import {
-  CmsConfig,
-  provideDefaultConfigFactory,
-  UserAccountFacadeTransitionalToken,
-} from '@spartacus/core';
-import { UserAccountFacade } from './facade/user-account.facade';
+import { CmsConfig, provideDefaultConfigFactory } from '@spartacus/core';
+import { UserAccountEventModule } from './events/user-account-event.module';
 import {
   USER_ACCOUNT_CORE_FEATURE,
   USER_ACCOUNT_FEATURE,
@@ -29,12 +31,7 @@ export function defaultUserAccountComponentsConfig(): CmsConfig {
 }
 
 @NgModule({
-  providers: [
-    provideDefaultConfigFactory(defaultUserAccountComponentsConfig),
-    {
-      provide: UserAccountFacadeTransitionalToken,
-      useExisting: UserAccountFacade,
-    },
-  ],
+  imports: [UserAccountEventModule],
+  providers: [provideDefaultConfigFactory(defaultUserAccountComponentsConfig)],
 })
 export class UserAccountRootModule {}

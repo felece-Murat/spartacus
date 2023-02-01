@@ -9,7 +9,11 @@ import {
 import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
-import { I18nTestingModule } from '@spartacus/core';
+import {
+  FeaturesConfig,
+  FeaturesConfigModule,
+  I18nTestingModule,
+} from '@spartacus/core';
 import { of } from 'rxjs';
 import { ICON_TYPE } from '../../../../misc/icon/icon.model';
 import {
@@ -67,14 +71,22 @@ describe('FacetListComponent', () => {
   beforeEach(
     waitForAsync(() => {
       TestBed.configureTestingModule({
-        imports: [I18nTestingModule, RouterTestingModule],
+        imports: [I18nTestingModule, RouterTestingModule, FeaturesConfigModule],
         declarations: [
           FacetListComponent,
           MockIconComponent,
           MockFacetComponent,
           MockKeyboadFocusDirective,
         ],
-        providers: [{ provide: FacetService, useClass: MockFacetService }],
+        providers: [
+          { provide: FacetService, useClass: MockFacetService },
+          {
+            provide: FeaturesConfig,
+            useValue: {
+              features: { level: '5.1' },
+            },
+          },
+        ],
       })
         .overrideComponent(FacetListComponent, {
           set: { changeDetection: ChangeDetectionStrategy.Default },
@@ -109,18 +121,6 @@ describe('FacetListComponent', () => {
 
   it('should render facets', () => {
     expect(element.queryAll(By.css('cx-facet')).length).toEqual(1);
-  });
-
-  it('should emit expandFacetGroup when handling unlock', () => {
-    spyOn(component, 'expandFacetGroup').and.stub();
-    component.isDialog = true;
-    fixture.detectChanges();
-
-    const container = element.queryAll(By.css('cx-facet'));
-    (container[0].nativeElement as HTMLElement).dispatchEvent(
-      new Event('unlock')
-    );
-    expect(component.expandFacetGroup).toHaveBeenCalled();
   });
 
   describe('dialog', () => {
@@ -163,7 +163,7 @@ describe('FacetListComponent', () => {
       component.isDialog = true;
       fixture.detectChanges();
 
-      const container = element.query(By.css('div'));
+      const container = element.query(By.css('section'));
       (container.nativeElement as HTMLElement).dispatchEvent(new Event('esc'));
       expect(component.closeList.emit).toHaveBeenCalled();
     });

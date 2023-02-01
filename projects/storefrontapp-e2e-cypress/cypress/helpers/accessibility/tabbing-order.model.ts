@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export interface TabElement {
   value?: string | any[];
   type: TabbingOrderTypes;
@@ -30,4 +36,5 @@ export enum TabbingOrderTypes {
   CX_PRODUCT_VIEW = 'cxProductView',
   INDEX_OF_ELEMENT = 'indexOfElement',
   TEXT_AREA = 'textarea',
+  CX_PROGRESS_BUTTON = 'cx-progress-button',
 }

@@ -1,7 +1,15 @@
-import { ElementRef, ViewContainerRef } from '@angular/core';
+import { DebugElement, ElementRef, ViewContainerRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Cart, I18nTestingModule, TranslationService } from '@spartacus/core';
-import { LaunchDialogService, LAUNCH_CALLER } from '@spartacus/storefront';
+import { RouterTestingModule } from '@angular/router/testing';
+import { Cart } from '@spartacus/cart/base/root';
+import { I18nTestingModule, TranslationService } from '@spartacus/core';
+import {
+  CardModule,
+  IconTestingModule,
+  LaunchDialogService,
+  LAUNCH_CALLER,
+} from '@spartacus/storefront';
+import { CommonConfiguratorTestUtilsService } from 'feature-libs/product-configurator/common/testing/common-configurator-test-utils.service';
 import { Observable, of } from 'rxjs';
 import { SavedCartDetailsService } from '../saved-cart-details.service';
 import { SavedCartDetailsOverviewComponent } from './saved-cart-details-overview.component';
@@ -45,10 +53,16 @@ describe('SavedCartDetailsOverviewComponent', () => {
   let component: SavedCartDetailsOverviewComponent;
   let fixture: ComponentFixture<SavedCartDetailsOverviewComponent>;
   let launchDialogService: LaunchDialogService;
+  let el: DebugElement;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [I18nTestingModule],
+      imports: [
+        I18nTestingModule,
+        IconTestingModule,
+        CardModule,
+        RouterTestingModule,
+      ],
       declarations: [SavedCartDetailsOverviewComponent],
       providers: [
         {
@@ -62,6 +76,7 @@ describe('SavedCartDetailsOverviewComponent', () => {
 
     fixture = TestBed.createComponent(SavedCartDetailsOverviewComponent);
     component = fixture.componentInstance;
+    el = fixture.debugElement;
 
     launchDialogService = TestBed.inject(LaunchDialogService);
 
@@ -196,5 +211,21 @@ describe('SavedCartDetailsOverviewComponent', () => {
         layoutOption: 'edit',
       }
     );
+  });
+
+  describe('Accessibility', () => {
+    it("should contain button with 'aria-label' attribute", () => {
+      const editButton: HTMLButtonElement =
+        el.nativeElement.querySelector('.cx-edit-container');
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        editButton,
+        'button',
+        'cx-edit-cart',
+        undefined,
+        'aria-label',
+        'savedCartDetails.editSavedCart'
+      );
+    });
   });
 });

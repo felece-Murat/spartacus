@@ -25,7 +25,9 @@ import { ConfiguratorCommonsService } from '../../core/facade/configurator-commo
 import { Configurator } from '../../core/model/configurator.model';
 import { ConfiguratorTestUtils } from '../../testing/configurator-test-utils';
 import { ConfiguratorProductTitleComponent } from './configurator-product-title.component';
+import { ConfiguratorExpertModeService } from '../../core/services/configurator-expert-mode.service';
 
+const PRODUCT_DESCRIPTION = 'Here is a product description';
 const PRODUCT_CODE = 'CONF_LAPTOP';
 const PRODUCT_NAME = 'productName';
 const CONFIG_ID = '12342';
@@ -51,6 +53,12 @@ const config: Configurator.Configuration = {
   ),
 
   productCode: PRODUCT_CODE,
+  kbKey: {
+    kbName: PRODUCT_CODE + '_KB',
+    kbBuildNumber: '2',
+    kbLogsys: 'RR5CLNT910',
+    kbVersion: '1',
+  },
 };
 
 const orderEntryconfig: Configurator.Configuration = {
@@ -85,6 +93,7 @@ const altText = 'some text';
 const product: Product = {
   name: PRODUCT_NAME,
   code: PRODUCT_CODE,
+  description: PRODUCT_DESCRIPTION,
   images: {
     PRIMARY: {
       thumbnail: {
@@ -150,11 +159,21 @@ class MockMediaComponent {
   @Input() format: any;
 }
 
+class MockConfiguratorExpertModeService {
+  setExpModeRequested(): void {}
+  getExpModeRequested() {}
+  setExpModeActive(): void {}
+  getExpModeActive(): Observable<boolean> {
+    return of(true);
+  }
+}
+
 describe('ConfigProductTitleComponent', () => {
   let component: ConfiguratorProductTitleComponent;
   let fixture: ComponentFixture<ConfiguratorProductTitleComponent>;
   let changeDetectorRef: ChangeDetectorRef;
   let configuratorUtils: CommonConfiguratorUtilsService;
+  let configExpertModeService: ConfiguratorExpertModeService;
   let htmlElem: HTMLElement;
 
   beforeEach(
@@ -192,8 +211,12 @@ describe('ConfigProductTitleComponent', () => {
           {
             provide: FeaturesConfig,
             useValue: {
-              features: { level: '3.3' },
+              features: { level: '5.1' },
             },
+          },
+          {
+            provide: ConfiguratorExpertModeService,
+            useClass: MockConfiguratorExpertModeService,
           },
         ],
       });
@@ -204,6 +227,7 @@ describe('ConfigProductTitleComponent', () => {
     changeDetectorRef = fixture.componentRef.injector.get(ChangeDetectorRef);
     htmlElem = fixture.nativeElement;
     component = fixture.componentInstance;
+    component.ghostStyle = false;
 
     configuratorUtils = TestBed.inject(
       CommonConfiguratorUtilsService as Type<CommonConfiguratorUtilsService>
@@ -211,6 +235,12 @@ describe('ConfigProductTitleComponent', () => {
     configuratorUtils.setOwnerKey(config.owner);
     configuratorUtils.setOwnerKey(orderEntryconfig.owner);
     configuration = config;
+
+    configExpertModeService = TestBed.inject(
+      ConfiguratorExpertModeService as Type<ConfiguratorExpertModeService>
+    );
+    spyOn(configExpertModeService, 'setExpModeRequested').and.callThrough();
+    spyOn(configExpertModeService, 'setExpModeActive').and.callThrough();
 
     fixture.detectChanges();
   });
@@ -298,5 +328,255 @@ describe('ConfigProductTitleComponent', () => {
       '.cx-title',
       PRODUCT_NAME
     );
+  });
+
+  it('should render kb key details properly', () => {
+    CommonConfiguratorTestUtilsService.expectElementPresent(
+      expect,
+      htmlElem,
+      'div.cx-kb-key-details'
+    );
+
+    CommonConfiguratorTestUtilsService.expectNumberOfElementsPresent(
+      expect,
+      htmlElem,
+      'div.cx-kb-pair',
+      4
+    );
+
+    CommonConfiguratorTestUtilsService.expectNumberOfElementsPresent(
+      expect,
+      htmlElem,
+      'span.cx-label',
+      4
+    );
+
+    CommonConfiguratorTestUtilsService.expectNumberOfElementsPresent(
+      expect,
+      htmlElem,
+      'span.cx-value',
+      4
+    );
+
+    CommonConfiguratorTestUtilsService.expectElementToContainText(
+      expect,
+      htmlElem,
+      'span.cx-value',
+      configuration.kbKey.kbName,
+      0
+    );
+
+    CommonConfiguratorTestUtilsService.expectElementToContainText(
+      expect,
+      htmlElem,
+      'span.cx-value',
+      configuration.kbKey.kbLogsys,
+      1
+    );
+
+    CommonConfiguratorTestUtilsService.expectElementToContainText(
+      expect,
+      htmlElem,
+      'span.cx-value',
+      configuration.kbKey.kbVersion,
+      2
+    );
+
+    CommonConfiguratorTestUtilsService.expectElementToContainText(
+      expect,
+      htmlElem,
+      'span.cx-value',
+      configuration.kbKey.kbBuildNumber,
+      3
+    );
+  });
+
+  describe('Accessibility', () => {
+    it("should contain div element with class name 'cx-toggle-details-link-text' and 'aria-label' attribute that defines an accessible name to label the current element", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'div',
+        'cx-toggle-details-link-text',
+        undefined,
+        'aria-label',
+        'configurator.a11y.showMoreProductInfo product:productName'
+      );
+    });
+
+    it("should contain span element with 'aria-hidden' attribute that removes span element from the accessibility tree", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'span',
+        undefined,
+        1,
+        'aria-hidden',
+        'true',
+        'configurator.header.showMore'
+      );
+    });
+
+    it("should contain button element with 'aria-expanded' attribute false", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'button',
+        undefined,
+        undefined,
+        'aria-expanded',
+        'false'
+      );
+    });
+
+    it("should contain div element with class name 'cx-toggle-details-link-text' and 'aria-label' attribute that defines an accessible name to label the current element", () => {
+      component.triggerDetails();
+      changeDetectorRef.detectChanges();
+
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'div',
+        'cx-toggle-details-link-text',
+        undefined,
+        'aria-label',
+        'configurator.a11y.showLessProductInfo product:' + product.name,
+        'configurator.header.showLess'
+      );
+    });
+
+    it("should contain button element with 'aria-expanded' attribute true", () => {
+      component.triggerDetails();
+      changeDetectorRef.detectChanges();
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'button',
+        undefined,
+        undefined,
+        'aria-expanded',
+        'true'
+      );
+    });
+
+    it("should contain div element with class name 'cx-details-content' and 'aria-hidden' attribute that removes div element from the accessibility tree", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'div',
+        'cx-details-content',
+        0,
+        'aria-hidden',
+        'true'
+      );
+    });
+
+    it("should contain div element with class name 'cx-details-content' and 'aria-hidden' attribute that removes div element from the accessibility tree", () => {
+      component.triggerDetails();
+      changeDetectorRef.detectChanges();
+
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'div',
+        'cx-details-content',
+        0,
+        'aria-hidden',
+        'false'
+      );
+    });
+
+    it("should contain span element with 'aria-label' attribute  for product name that defines an accessible name to label the current element", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'span',
+        undefined,
+        2,
+        'aria-label',
+        'configurator.a11y.productName',
+        product.name
+      );
+    });
+
+    it("should contain span element with 'aria-label' attribute for product code that defines an accessible name to label the current element", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'span',
+        undefined,
+        3,
+        'aria-label',
+        'configurator.a11y.productCode',
+        product.code
+      );
+    });
+
+    it("should contain span element with 'aria-label' attribute for product description that defines an accessible name to label the current element", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'span',
+        undefined,
+        4,
+        'aria-label',
+        'configurator.a11y.productDescription',
+        product.description
+      );
+    });
+
+    it("should contain span element with 'aria-label' attribute for kb key name that defines an accessible name to label the current element", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'span',
+        'cx-label',
+        0,
+        'aria-label',
+        'configurator.a11y.kbKeyName name:' + configuration.kbKey.kbName,
+        'configurator.header.kbKeyName'
+      );
+    });
+
+    it("should contain span element with 'aria-label' attribute for kb key logical system that defines an accessible name to label the current element", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'span',
+        'cx-label',
+        1,
+        'aria-label',
+        'configurator.a11y.kbKeyLogsys logsys:' + configuration.kbKey.kbLogsys,
+        'configurator.header.kbKeyLogsys'
+      );
+    });
+
+    it("should contain span element with 'aria-label' attribute for kb key version that defines an accessible name to label the current element", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'span',
+        'cx-label',
+        2,
+        'aria-label',
+        'configurator.a11y.kbKeyVersion version:' +
+          configuration.kbKey.kbVersion,
+        'configurator.header.kbKeyVersion'
+      );
+    });
+
+    it("should contain span element with 'aria-label' attribute for kb key build number that defines an accessible name to label the current element", () => {
+      CommonConfiguratorTestUtilsService.expectElementContainsA11y(
+        expect,
+        htmlElem,
+        'span',
+        'cx-label',
+        3,
+        'aria-label',
+        'configurator.a11y.kbKeyBuildNr number:' +
+          configuration.kbKey.kbBuildNumber,
+        'configurator.header.kbKeyBuildNr'
+      );
+    });
   });
 });

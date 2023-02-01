@@ -1,6 +1,13 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { generateMail, randomString } from '../helpers/user';
 
 export interface SampleUser {
+  titleCode?: string;
   firstName?: string;
   lastName?: string;
   fullName?: string;
@@ -31,6 +38,10 @@ export interface SampleProduct {
   code: string;
 }
 
+export interface SampleNonPurchasableProduct extends SampleProduct {
+  multidimensional: boolean;
+}
+
 export interface SampleCartProduct {
   estimatedShipping: string;
   total: string;
@@ -41,6 +52,7 @@ export const user = getSampleUser();
 
 export function getSampleUser() {
   return {
+    titleCode: 'Mr',
     firstName: 'Cypress',
     lastName: 'customer',
     fullName: 'Cypress customer',
@@ -60,7 +72,7 @@ export function getSampleUser() {
       number: '4111111111111111',
       expires: {
         month: '12',
-        year: '2025',
+        year: '2027',
       },
       cvv: '123',
     },

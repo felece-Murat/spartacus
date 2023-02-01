@@ -1,6 +1,13 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Injectable } from '@angular/core';
+import { OrderEntry, ProductData } from '@spartacus/cart/base/root';
+import { facadeFactory, Product } from '@spartacus/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { facadeFactory, OrderEntry, Product } from '@spartacus/core';
 import { CART_QUICK_ORDER_CORE_FEATURE } from '../feature-name';
 import { QuickOrderAddEntryEvent } from '../models/quick-order.model';
 
@@ -12,11 +19,12 @@ export function quickOrderFacadeFactory() {
       'addProduct',
       'addToCart',
       'clearList',
+      'canAdd',
+      'setListLimit',
       'getEntries',
       'getProductAdded',
       'loadEntries',
       'softDeleteEntry',
-      'search',
       'searchProducts',
       'setProductAdded',
       'updateEntryQuantity',
@@ -24,6 +32,9 @@ export function quickOrderFacadeFactory() {
       'restoreSoftDeletedEntry',
       'hardDeleteEntry',
       'clearDeletedEntries',
+      'getNonPurchasableProductError',
+      'setNonPurchasableProductError',
+      'clearNonPurchasableProductError',
     ],
   });
 }
@@ -39,12 +50,6 @@ export abstract class QuickOrderFacade {
   abstract getEntries(): BehaviorSubject<OrderEntry[]>;
 
   /**
-   * @deprecated since 4.2 - use searchProducts instead
-   * Search product using SKU
-   */
-  abstract search(productCode: string): Observable<Product>;
-
-  /**
    * Search products using query
    */
   abstract searchProducts(
@@ -56,6 +61,19 @@ export abstract class QuickOrderFacade {
    * Clear a list of added entries
    */
   abstract clearList(): void;
+
+  /**
+   * Get information about the possibility to add the next product
+   */
+  abstract canAdd(
+    code?: string,
+    productsData?: ProductData[]
+  ): Observable<boolean>;
+
+  /**
+   * Set quick order list limit property
+   */
+  abstract setListLimit(limit: number): void;
 
   /**
    * Load a list of entries
@@ -71,11 +89,6 @@ export abstract class QuickOrderFacade {
    * Delete single entry from the list
    */
   abstract softDeleteEntry(index: number): void;
-
-  /**
-   * @deprecated since 4.2 - use softDeleteEntry instead
-   */
-  abstract removeEntry(index: number): void;
 
   /**
    * Add product to the quick order list
@@ -116,4 +129,19 @@ export abstract class QuickOrderFacade {
    * Clear all deleted entries and timeout subscriptions
    */
   abstract clearDeletedEntries(): void;
+
+  /**
+   *  Return non purchasable product error
+   */
+  abstract getNonPurchasableProductError(): Observable<Product | null>;
+
+  /**
+   * Set error that selected product is not purchasable
+   */
+  abstract setNonPurchasableProductError(product: Product): void;
+
+  /**
+   * Clear not purchasable product error
+   */
+  abstract clearNonPurchasableProductError(): void;
 }

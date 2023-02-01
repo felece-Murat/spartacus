@@ -1,7 +1,4 @@
-import { login } from '../../../helpers/auth-forms';
-import * as cart from '../../../helpers/cart';
 import * as cartCoupon from '../../../helpers/coupons/cart-coupon';
-import { waitForPage } from '../../../helpers/checkout-flow';
 import {
   addProductToCart,
   ItemList,
@@ -20,38 +17,6 @@ context('Save for later', () => {
     before(() => {
       cy.window().then((win) => win.sessionStorage.clear());
       cy.visit('/');
-    });
-
-    context('Guest', () => {
-      it('should register and login first for anonymous user', () => {
-        addProductToCart(products[0]);
-        cy.visit('/cart');
-        moveItem(products[0], ItemList.SaveForLater, true);
-        cy.location('pathname').should('contain', '/login');
-      });
-    });
-
-    context('Re-login customer', () => {
-      it('Should save items in saved for later list when logout', () => {
-        const alias = waitForPage('/cart', 'cartPage');
-        cy.requireLoggedIn().then((account) => {
-          addProductToCart(products[2]);
-          moveItem(products[2], ItemList.SaveForLater);
-          validateCart(0, 1);
-          cart.logOutAndEmptyCart();
-          const loginPage = waitForPage('/login', 'getLoginPage');
-          cy.visit('/login');
-          cy.wait(`@${loginPage}`).its('response.statusCode').should('eq', 200);
-          login(account.username, account.password);
-          cy.url().should('not.contain', 'login');
-        });
-        cy.visit(`/cart`);
-        cy.wait(`@${alias}`).its('response.statusCode').should('eq', 200);
-
-        verifyMiniCartQty(0);
-        validateProduct(products[2], 1, ItemList.SaveForLater);
-        removeItem(products[2], ItemList.SaveForLater);
-      });
     });
 
     describe('Customer', () => {
@@ -117,6 +82,22 @@ context('Save for later', () => {
         validateCart(1, 2);
         moveItem(products[3], ItemList.Cart);
         validateCart(3, 0);
+      });
+
+      it('should be unable to save a cart for later if there is no active cart', () => {
+        addProductToCart(products[0]);
+
+        cy.get('cx-mini-cart a').click();
+
+        cy.get('cx-add-to-saved-cart').should('not.be.disabled');
+
+        moveItem(products[0], ItemList.SaveForLater);
+
+        cy.get('button').contains('Save For Later').should('not.exist');
+
+        cy.get('cx-add-to-saved-cart')
+          .contains('Save cart for later')
+          .should('be.disabled');
       });
     });
   });

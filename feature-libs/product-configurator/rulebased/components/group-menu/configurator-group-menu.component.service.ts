@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { ElementRef, Injectable, QueryList } from '@angular/core';
 import { WindowRef } from '@spartacus/core';
 
@@ -17,8 +23,8 @@ export class ConfiguratorGroupMenuService {
   ): number | undefined {
     if (groups) {
       const group = groups.find(
-        (group) =>
-          group?.nativeElement?.id ===
+        (groupHTMLEl) =>
+          groupHTMLEl.nativeElement?.id ===
           this.windowRef?.document?.activeElement?.id
       );
       if (group) {
@@ -67,10 +73,10 @@ export class ConfiguratorGroupMenuService {
     );
 
     if (groups) {
-      if (currentGroupIndex === groups?.length - 1) {
-        groups?.first?.nativeElement?.focus();
+      if (currentGroupIndex === groups.length - 1) {
+        groups.first?.nativeElement?.focus();
       } else {
-        groups?.toArray()[currentGroupIndex + 1]?.nativeElement.focus();
+        groups.toArray()[currentGroupIndex + 1]?.nativeElement.focus();
       }
     }
   }
@@ -94,9 +100,9 @@ export class ConfiguratorGroupMenuService {
 
     if (groups) {
       if (currentGroupIndex === 0) {
-        groups?.last?.nativeElement?.focus();
+        groups.last?.nativeElement?.focus();
       } else {
-        groups?.toArray()[currentGroupIndex - 1]?.nativeElement?.focus();
+        groups.toArray()[currentGroupIndex - 1]?.nativeElement?.focus();
       }
     }
   }
@@ -132,10 +138,10 @@ export class ConfiguratorGroupMenuService {
   ): boolean | undefined {
     if (groups) {
       return (
-        groups?.first?.nativeElement?.classList?.value?.indexOf(
+        groups.first?.nativeElement?.classList?.value?.indexOf(
           'cx-menu-back'
         ) !== -1 &&
-        this.windowRef?.document?.activeElement === groups?.first?.nativeElement
+        this.windowRef?.document?.activeElement === groups.first?.nativeElement
       );
     }
     return undefined;

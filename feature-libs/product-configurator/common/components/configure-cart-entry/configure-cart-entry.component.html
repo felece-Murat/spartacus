@@ -16,9 +16,9 @@
         }
       } | cxUrl
     "
-    cxModal="dismiss"
-    [queryParams]="{ forceReload: true, resolveIssues: hasIssues() }"
+    [queryParams]="getQueryParams()"
     cxAutoFocus
+    attr.aria-describedby="{{ getResolveIssuesA11yDescription() }}"
   >
     <ng-container *ngIf="!isDisabled(); then configureText"> </ng-container>
   </a>

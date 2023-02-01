@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import * as orderApprovalSampleData from '../../../sample-data/b2b-order-approval';
 import * as savedCartSampleData from '../../../sample-data/b2b-saved-cart';
 import { TabbingOrderConfig, TabbingOrderTypes } from '../tabbing-order.model';
@@ -12,7 +18,7 @@ const continueButton = { value: 'Continue', type: TabbingOrderTypes.BUTTON };
 
 const accountReviewOrderGeneral = [
   { value: 'Method ofPayment', type: TabbingOrderTypes.LINK },
-  { value: 'ShippingAddress', type: TabbingOrderTypes.LINK },
+  { value: 'DeliveryAddress', type: TabbingOrderTypes.LINK },
   { value: 'DeliveryMode', type: TabbingOrderTypes.LINK },
   {
     value: '/powertools-spa/en/USD/checkout/payment-type',
@@ -23,16 +29,20 @@ const accountReviewOrderGeneral = [
     type: TabbingOrderTypes.IMG_LINK,
   },
   {
-    value: '/powertools-spa/en/USD/checkout/shipping-address',
+    value: '/powertools-spa/en/USD/checkout/delivery-address',
     type: TabbingOrderTypes.IMG_LINK,
   },
   {
-    value: '/powertools-spa/en/USD/checkout/shipping-address',
+    value: '/powertools-spa/en/USD/checkout/delivery-address',
     type: TabbingOrderTypes.IMG_LINK,
   },
   {
     value: '/powertools-spa/en/USD/checkout/delivery-mode',
     type: TabbingOrderTypes.IMG_LINK,
+  },
+  {
+    value: 'Cordless screwdriver 2436',
+    type: TabbingOrderTypes.CX_MEDIA,
   },
   {
     value: 'Cordless screwdriver 2436',
@@ -99,16 +109,17 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
   shippingAddressAccount: [
     { value: 'Method ofPayment', type: TabbingOrderTypes.LINK },
     { value: 'Cost Center', type: TabbingOrderTypes.SELECT },
+    { type: TabbingOrderTypes.GENERIC_ELEMENT },
     {
       value: 'Ship to this address',
-      type: TabbingOrderTypes.LINK,
+      type: TabbingOrderTypes.GENERIC_BUTTON,
     },
     backButton,
     continueButton,
   ],
   deliveryMode: [
     { value: 'Method ofPayment', type: TabbingOrderTypes.LINK },
-    { value: 'ShippingAddress', type: TabbingOrderTypes.LINK },
+    { value: 'DeliveryAddress', type: TabbingOrderTypes.LINK },
     { value: 'deliveryModeId', type: TabbingOrderTypes.RADIO },
     { value: 'deliveryModeId', type: TabbingOrderTypes.RADIO },
     backButton,
@@ -116,7 +127,7 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
   ],
   paymentDetailsCard: [
     { value: 'Method ofPayment', type: TabbingOrderTypes.LINK },
-    { value: 'ShippingAddress', type: TabbingOrderTypes.LINK },
+    { value: 'DeliveryAddress', type: TabbingOrderTypes.LINK },
     { value: 'DeliveryMode', type: TabbingOrderTypes.LINK },
     { type: TabbingOrderTypes.GENERIC_INPUT },
     {
@@ -132,7 +143,7 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
       type: TabbingOrderTypes.CHECKBOX_WITH_LABEL,
     },
     {
-      value: 'Same as shipping address',
+      value: 'Same as delivery address',
       type: TabbingOrderTypes.CHECKBOX_WITH_LABEL,
     },
     backButton,
@@ -151,7 +162,7 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
   ],
   checkoutReviewOrder: [
     { value: 'Method ofPayment', type: TabbingOrderTypes.LINK },
-    { value: 'ShippingAddress', type: TabbingOrderTypes.LINK },
+    { value: 'DeliveryAddress', type: TabbingOrderTypes.LINK },
     { value: 'DeliveryMode', type: TabbingOrderTypes.LINK },
     { value: 'PaymentDetails', type: TabbingOrderTypes.LINK },
     {
@@ -167,12 +178,16 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
       type: TabbingOrderTypes.IMG_LINK,
     },
     {
-      value: '/powertools-spa/en/USD/checkout/shipping-address',
+      value: '/powertools-spa/en/USD/checkout/delivery-address',
       type: TabbingOrderTypes.IMG_LINK,
     },
     {
       value: '/powertools-spa/en/USD/checkout/delivery-mode',
       type: TabbingOrderTypes.IMG_LINK,
+    },
+    {
+      value: 'Cordless screwdriver 2436',
+      type: TabbingOrderTypes.CX_MEDIA,
     },
     {
       value: 'Cordless screwdriver 2436',
@@ -252,6 +267,10 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     },
     {
       value: 'Angle Grinder RT-AG 115',
+      type: TabbingOrderTypes.CX_MEDIA,
+    },
+    {
+      value: 'Angle Grinder RT-AG 115',
       type: TabbingOrderTypes.LINK,
     },
   ],
@@ -270,6 +289,10 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     },
     {
       value: 'Angle Grinder RT-AG 115',
+      type: TabbingOrderTypes.CX_MEDIA,
+    },
+    {
+      value: 'Angle Grinder RT-AG 115',
       type: TabbingOrderTypes.LINK,
     },
   ],
@@ -285,6 +308,10 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     {
       value: 'Reject',
       type: TabbingOrderTypes.BUTTON,
+    },
+    {
+      value: 'Angle Grinder RT-AG 115',
+      type: TabbingOrderTypes.CX_MEDIA,
     },
     {
       value: 'Angle Grinder RT-AG 115',
@@ -309,15 +336,18 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     },
     {
       value: savedCartSampleData.products[0].name,
+      type: TabbingOrderTypes.CX_MEDIA,
+    },
+    {
+      value: savedCartSampleData.products[0].name,
       type: TabbingOrderTypes.LINK,
     },
     { type: TabbingOrderTypes.GENERIC_INPUT },
     { value: '+', type: TabbingOrderTypes.BUTTON },
     { value: 'Remove', type: TabbingOrderTypes.LINK },
-    {
-      value: 'Proceed to Checkout',
-      type: TabbingOrderTypes.BUTTON,
-    },
+    { value: 'Clear Cart', type: TabbingOrderTypes.BUTTON },
+    { value: 'Import Products', type: TabbingOrderTypes.LINK },
+    { value: 'Export to CSV', type: TabbingOrderTypes.LINK },
     {
       value: 'couponCode',
       type: TabbingOrderTypes.FORM_FIELD,
@@ -333,6 +363,10 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     { type: TabbingOrderTypes.GENERIC_INPUT },
     {
       value: 'Add',
+      type: TabbingOrderTypes.BUTTON,
+    },
+    {
+      value: 'Proceed to Checkout',
       type: TabbingOrderTypes.BUTTON,
     },
   ],
@@ -379,6 +413,7 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
       value: 'Make Cart Active',
       type: TabbingOrderTypes.LINK,
     },
+    { value: 'Import Products', type: TabbingOrderTypes.LINK },
   ],
   savedCartDetails: [
     {
@@ -386,11 +421,18 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     },
     {
       value: 'Cordless screwdriver 2436',
+      type: TabbingOrderTypes.CX_MEDIA,
+    },
+    {
+      value: 'Cordless screwdriver 2436',
       type: TabbingOrderTypes.LINK,
     },
     { type: TabbingOrderTypes.GENERIC_INPUT },
     { value: '+', type: TabbingOrderTypes.BUTTON },
+    { value: 'Add to Active Cart', type: TabbingOrderTypes.LINK },
     { value: 'Remove', type: TabbingOrderTypes.LINK },
+    { value: 'Import Products', type: TabbingOrderTypes.LINK },
+    { value: 'Export to CSV', type: TabbingOrderTypes.LINK },
     { value: 'Delete Saved Cart', type: TabbingOrderTypes.BUTTON },
     { value: 'Make cart active', type: TabbingOrderTypes.BUTTON },
   ],
@@ -420,15 +462,18 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     },
     {
       value: savedCartSampleData.products[0].name,
+      type: TabbingOrderTypes.CX_MEDIA,
+    },
+    {
+      value: savedCartSampleData.products[0].name,
       type: TabbingOrderTypes.LINK,
     },
     { type: TabbingOrderTypes.GENERIC_INPUT },
     { value: '+', type: TabbingOrderTypes.BUTTON },
     { value: 'Remove', type: TabbingOrderTypes.LINK },
-    {
-      value: 'Proceed to Checkout',
-      type: TabbingOrderTypes.BUTTON,
-    },
+    { value: 'Clear Cart', type: TabbingOrderTypes.BUTTON },
+    { value: 'Import Products', type: TabbingOrderTypes.LINK },
+    { value: 'Export to CSV', type: TabbingOrderTypes.LINK },
     {
       value: 'couponCode',
       type: TabbingOrderTypes.FORM_FIELD,
@@ -445,6 +490,32 @@ export const tabbingOrderConfig: TabbingOrderConfig = {
     {
       value: 'Add',
       type: TabbingOrderTypes.BUTTON,
+    },
+    {
+      value: 'Proceed to Checkout',
+      type: TabbingOrderTypes.BUTTON,
+    },
+  ],
+  userRegistrationForm: [
+    { type: TabbingOrderTypes.NG_SELECT },
+    { type: TabbingOrderTypes.FORM_FIELD },
+    { type: TabbingOrderTypes.FORM_FIELD },
+    { type: TabbingOrderTypes.FORM_FIELD },
+    { type: TabbingOrderTypes.NG_SELECT },
+    { type: TabbingOrderTypes.FORM_FIELD },
+    { type: TabbingOrderTypes.FORM_FIELD },
+    { type: TabbingOrderTypes.FORM_FIELD },
+    { type: TabbingOrderTypes.NG_SELECT },
+    { type: TabbingOrderTypes.FORM_FIELD },
+    { type: TabbingOrderTypes.FORM_FIELD },
+    { type: TabbingOrderTypes.TEXT_AREA },
+    {
+      value: 'Register',
+      type: TabbingOrderTypes.BUTTON,
+    },
+    {
+      value: 'Already registered? Go to Sign in',
+      type: TabbingOrderTypes.LINK,
     },
   ],
 };

@@ -1,43 +1,4 @@
-<ng-container *cxFeatureLevel="'!4.1'">
-  <div id="{{ createAttributeIdForConfigurator(attribute) }}">
-    <div class="form-check">
-      <input
-        id="{{
-          createAttributeValueIdForConfigurator(
-            attribute,
-            attribute?.values[0].valueCode
-          )
-        }}"
-        type="checkbox"
-        class="form-check-input"
-        [value]="attribute?.values[0].valueCode"
-        [cxFocus]="{ key: attribute.name + '-' + attribute?.values[0].name }"
-        (change)="onSelect()"
-        [formControl]="attributeCheckBoxForm"
-        name="{{ createAttributeIdForConfigurator(attribute) }}"
-      />
-      <label
-        id="{{
-          createValueUiKey(
-            'label',
-            attribute.name,
-            attribute?.values[0].valueCode
-          )
-        }}"
-        for="{{
-          createAttributeValueIdForConfigurator(
-            attribute,
-            attribute?.values[0].valueCode
-          )
-        }}"
-        class="form-check-label"
-        >{{ attribute?.values[0].valueDisplay }}</label
-      >
-    </div>
-  </div>
-</ng-container>
-
-<ng-container *cxFeatureLevel="'4.1'">
+<ng-container>
   <fieldset>
     <legend style="display: none">{{ attribute.label }}</legend>
     <div id="{{ createAttributeIdForConfigurator(attribute) }}">
@@ -59,6 +20,28 @@
             (change)="onSelect()"
             [formControl]="attributeCheckBoxForm"
             name="{{ createAttributeIdForConfigurator(attribute) }}"
+            [attr.aria-label]="
+              attribute?.values[0].valuePrice &&
+              attribute?.values[0].valuePrice?.value !== 0
+                ? ('configurator.a11y.valueOfAttributeFullWithPrice'
+                  | cxTranslate
+                    : {
+                        value: attribute?.values[0].valueDisplay,
+                        attribute: attribute.label,
+                        price: attribute?.values[0].valuePrice.formattedValue
+                      })
+                : ('configurator.a11y.valueOfAttributeFull'
+                  | cxTranslate
+                    : {
+                        value: attribute?.values[0].valueDisplay,
+                        attribute: attribute.label
+                      })
+            "
+            [attr.aria-describedby]="
+              createAttributeUiKey('label', attribute.name) +
+              ' ' +
+              createAttributeUiKey('attribute-msg', attribute.name)
+            "
           />
           <label
             id="{{
@@ -74,8 +57,15 @@
                 attribute?.values[0].valueCode
               )
             }}"
+            aria-hidden="true"
             class="form-check-label"
-            >{{ attribute?.values[0].valueDisplay }}</label
+            >{{
+              getLabel(
+                expMode,
+                attribute?.values[0].valueDisplay,
+                attribute?.values[0].valueCode
+              )
+            }}</label
           >
         </div>
         <div class="cx-value-price">

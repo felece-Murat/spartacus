@@ -10,15 +10,27 @@ import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
 import {
+  FeatureConfigService,
+  FeaturesConfig,
+  FeaturesConfigModule,
   I18nTestingModule,
-  OrderHistoryList,
-  ReplenishmentOrder,
   RoutingService,
   TranslationService,
 } from '@spartacus/core';
-import { OrderFacade, ReplenishmentOrderFacade } from '@spartacus/order/root';
+import {
+  OrderHistoryFacade,
+  OrderHistoryList,
+  ReplenishmentOrder,
+  ReplenishmentOrderHistoryFacade,
+} from '@spartacus/order/root';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { OrderHistoryComponent } from './order-history.component';
+
+class MockFeatureConfigService implements Partial<FeatureConfigService> {
+  isLevel(_version: string): boolean {
+    return true;
+  }
+}
 
 const mockOrders: OrderHistoryList = {
   orders: [
@@ -39,6 +51,31 @@ const mockOrders: OrderHistoryList = {
   sorts: [{ code: 'byDate', selected: true }],
 };
 
+const mockPOOrders: OrderHistoryList = {
+  orders: [
+    {
+      code: '1',
+      placed: new Date('2018-01-01'),
+      statusDisplay: 'test',
+      total: { formattedValue: '1' },
+      purchaseOrderNumber: '001',
+      costCenter: {
+        code: 'Custom_Retail',
+        name: 'Custom Retail',
+      },
+    },
+    {
+      code: '2',
+      placed: new Date('2018-01-02'),
+      statusDisplay: 'test2',
+      total: { formattedValue: '2' },
+      purchaseOrderNumber: '002',
+    },
+  ],
+  pagination: { totalResults: 1, totalPages: 2, sort: 'byDate' },
+  sorts: [{ code: 'byDate', selected: true }],
+};
+
 const mockEmptyOrderList: OrderHistoryList = {
   orders: [],
   pagination: { totalResults: 0, totalPages: 1 },
@@ -52,6 +89,7 @@ const mockReplenishmentOrder: ReplenishmentOrder = {
 };
 
 const mockOrderHistoryList$ = new BehaviorSubject<OrderHistoryList>(mockOrders);
+
 const mockReplenishmentOrder$ = new BehaviorSubject<ReplenishmentOrder>(
   mockReplenishmentOrder
 );
@@ -83,7 +121,7 @@ class MockUrlPipe implements PipeTransform {
   transform() {}
 }
 
-class MockUserOrderService {
+class MockOrderHistoryFacade implements Partial<OrderHistoryFacade> {
   getOrderHistoryList(): Observable<OrderHistoryList> {
     return mockOrderHistoryList$.asObservable();
   }
@@ -91,7 +129,6 @@ class MockUserOrderService {
     return of(true);
   }
   loadOrderList(
-    _userId: string,
     _pageSize: number,
     _currentPage?: number,
     _sort?: string
@@ -109,7 +146,9 @@ class MockTranslationService {
   }
 }
 
-class MockUserReplenishmentOrderService {
+class MockReplenishmentOrderHistoryFacade
+  implements Partial<ReplenishmentOrderHistoryFacade>
+{
   getReplenishmentOrderDetails(): Observable<ReplenishmentOrder> {
     return mockReplenishmentOrder$.asObservable();
   }
@@ -118,13 +157,13 @@ class MockUserReplenishmentOrderService {
 describe('OrderHistoryComponent', () => {
   let component: OrderHistoryComponent;
   let fixture: ComponentFixture<OrderHistoryComponent>;
-  let userService: OrderFacade | MockUserOrderService;
+  let orderHistoryFacade: OrderHistoryFacade;
   let routingService: RoutingService;
 
   beforeEach(
     waitForAsync(() => {
       TestBed.configureTestingModule({
-        imports: [RouterTestingModule, I18nTestingModule],
+        imports: [RouterTestingModule, I18nTestingModule, FeaturesConfigModule],
         declarations: [
           OrderHistoryComponent,
           MockUrlPipe,
@@ -133,16 +172,26 @@ describe('OrderHistoryComponent', () => {
         ],
         providers: [
           { provide: RoutingService, useClass: MockRoutingService },
-          { provide: OrderFacade, useClass: MockUserOrderService },
+          { provide: OrderHistoryFacade, useClass: MockOrderHistoryFacade },
           { provide: TranslationService, useClass: MockTranslationService },
           {
-            provide: ReplenishmentOrderFacade,
-            useClass: MockUserReplenishmentOrderService,
+            provide: ReplenishmentOrderHistoryFacade,
+            useClass: MockReplenishmentOrderHistoryFacade,
+          },
+          {
+            provide: FeatureConfigService,
+            useClass: MockFeatureConfigService,
+          },
+          {
+            provide: FeaturesConfig,
+            useValue: {
+              features: { level: '5.1' },
+            },
           },
         ],
       }).compileComponents();
 
-      userService = TestBed.inject(OrderFacade);
+      orderHistoryFacade = TestBed.inject(OrderHistoryFacade);
       routingService = TestBed.inject(RoutingService);
     })
   );
@@ -154,6 +203,13 @@ describe('OrderHistoryComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should have a row tag in the table header', () => {
+    fixture.detectChanges();
+    expect(
+      fixture.debugElement.query(By.css('.cx-order-history-table thead tr'))
+    ).toBeTruthy();
   });
 
   it('should read order list', () => {
@@ -182,12 +238,12 @@ describe('OrderHistoryComponent', () => {
   });
 
   it('should set correctly sort code', () => {
-    spyOn(userService, 'loadOrderList').and.stub();
+    spyOn(orderHistoryFacade, 'loadOrderList').and.stub();
 
     component.changeSortCode('byOrderNumber');
 
     expect(component.sortType).toBe('byOrderNumber');
-    expect(userService.loadOrderList).toHaveBeenCalledWith(
+    expect(orderHistoryFacade.loadOrderList).toHaveBeenCalledWith(
       5,
       0,
       'byOrderNumber'
@@ -195,12 +251,16 @@ describe('OrderHistoryComponent', () => {
   });
 
   it('should set correctly page', () => {
-    spyOn(userService, 'loadOrderList').and.stub();
+    spyOn(orderHistoryFacade, 'loadOrderList').and.stub();
 
     component.sortType = 'byDate';
     component.pageChange(1);
 
-    expect(userService.loadOrderList).toHaveBeenCalledWith(5, 1, 'byDate');
+    expect(orderHistoryFacade.loadOrderList).toHaveBeenCalledWith(
+      5,
+      1,
+      'byDate'
+    );
   });
 
   it('should display pagination', () => {
@@ -212,24 +272,78 @@ describe('OrderHistoryComponent', () => {
     );
 
     expect(elements.length).toEqual(2);
+    expect(component.sortType).toEqual('byDate');
   });
 
-  it('should NOT display pagination', () => {
-    mockOrderHistoryList$.next(mockEmptyOrderList);
+  it('should display PO Number & Cost Center', () => {
+    mockOrderHistoryList$.next(mockOrders);
     fixture.detectChanges();
+
+    const header = fixture.debugElement.query(
+      By.css('.cx-order-history-thead-mobile')
+    );
+    expect(header.children.length).toEqual(4);
+
+    mockOrderHistoryList$.next(mockPOOrders);
+    fixture.detectChanges();
+
+    const headerPO = fixture.debugElement.query(
+      By.css('.cx-order-history-thead-mobile')
+    );
+    expect(headerPO.children.length).toEqual(6);
+    expect(headerPO.children[1].nativeElement.textContent.trim()).toEqual(
+      'orderHistory.PONumber'
+    );
+    expect(headerPO.children[2].nativeElement.textContent.trim()).toEqual(
+      'orderHistory.costCenter'
+    );
+  });
+
+  it('should not have sortType if no orders and pagination are provided', () => {
+    let orders: OrderHistoryList | undefined;
+
+    mockOrderHistoryList$.next(undefined);
+
+    component.orders$
+      .subscribe((value) => {
+        orders = value;
+      })
+      .unsubscribe();
+
+    expect(orders).toEqual(undefined);
+
+    expect(component.sortType).toBe(undefined);
+  });
+
+  it('should not have sortType if no pagination is provided', () => {
+    let orders: OrderHistoryList | undefined;
+
+    mockOrderHistoryList$.next(mockEmptyOrderList);
+
+    component.orders$
+      .subscribe((value) => {
+        orders = value;
+      })
+      .unsubscribe();
 
     const elements = fixture.debugElement.queryAll(
       By.css('.cx-order-history-pagination')
     );
 
     expect(elements.length).toEqual(0);
+    expect(orders).toEqual({
+      orders: [],
+      pagination: { totalResults: 0, totalPages: 1 },
+    });
+
+    expect(component.sortType).toBe(undefined);
   });
 
   it('should clear order history data when component destroy', () => {
-    spyOn(userService, 'clearOrderList').and.stub();
+    spyOn(orderHistoryFacade, 'clearOrderList').and.stub();
 
     component.ngOnDestroy();
-    expect(userService.clearOrderList).toHaveBeenCalledWith();
+    expect(orderHistoryFacade.clearOrderList).toHaveBeenCalledWith();
   });
 
   describe('when replenishment does NOT exist', () => {

@@ -1,15 +1,27 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import {
   ChangeDetectionStrategy,
   Component,
   OnDestroy,
   OnInit,
 } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
-  ActiveCartService,
+  UntypedFormBuilder,
+  UntypedFormGroup,
+  Validators,
+} from '@angular/forms';
+import {
+  ActiveCartFacade,
   Cart,
   CartAddEntryFailEvent,
   CartAddEntrySuccessEvent,
+} from '@spartacus/cart/base/root';
+import {
   EventService,
   GlobalMessageService,
   GlobalMessageType,
@@ -23,21 +35,21 @@ import { first, map } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CartQuickOrderFormComponent implements OnInit, OnDestroy {
-  quickOrderForm: FormGroup;
+  quickOrderForm: UntypedFormGroup;
   cartIsLoading$: Observable<boolean> = this.activeCartService
     .isStable()
     .pipe(map((loaded) => !loaded));
   cart$: Observable<Cart> = this.activeCartService.getActive();
   min = 1;
 
-  private subscription: Subscription = new Subscription();
-  private cartEventsSubscription: Subscription = new Subscription();
-  private minQuantityValue: number = 1;
+  protected subscription: Subscription = new Subscription();
+  protected cartEventsSubscription: Subscription = new Subscription();
+  protected minQuantityValue: number = 1;
 
   constructor(
-    protected activeCartService: ActiveCartService,
+    protected activeCartService: ActiveCartFacade,
     protected eventService: EventService,
-    protected formBuilder: FormBuilder,
+    protected formBuilder: UntypedFormBuilder,
     protected globalMessageService: GlobalMessageService
   ) {}
 
@@ -71,7 +83,10 @@ export class CartQuickOrderFormComponent implements OnInit, OnDestroy {
   protected buildForm(): void {
     this.quickOrderForm = this.formBuilder.group({
       productCode: ['', [Validators.required]],
-      quantity: [this.minQuantityValue, [Validators.required]],
+      quantity: [
+        this.minQuantityValue,
+        { updateOn: 'blur', validators: [Validators.required] },
+      ],
     });
   }
 
@@ -142,7 +157,7 @@ export class CartQuickOrderFormComponent implements OnInit, OnDestroy {
     );
   }
 
-  private getValidCount(value: number) {
+  protected getValidCount(value: number) {
     if (value < this.min || !value) {
       value = this.min;
     }

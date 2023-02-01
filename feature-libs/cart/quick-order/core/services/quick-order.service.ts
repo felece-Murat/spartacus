@@ -1,19 +1,28 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Injectable, OnDestroy } from '@angular/core';
+import {
+  ActiveCartFacade,
+  CartAddEntryFailEvent,
+  CartAddEntrySuccessEvent,
+  OrderEntry,
+  ProductData,
+} from '@spartacus/cart/base/root';
 import {
   defaultQuickOrderConfig,
   QuickOrderAddEntryEvent,
   QuickOrderFacade,
 } from '@spartacus/cart/quick-order/root';
 import {
-  ActiveCartService,
-  CartAddEntryFailEvent,
-  CartAddEntrySuccessEvent,
+  Config,
   EventService,
   HttpErrorModel,
-  OrderEntry,
   Product,
-  ProductAdapter,
-  ProductSearchAdapter,
+  ProductSearchConnector,
   ProductSearchPage,
   SearchConfig,
 } from '@spartacus/core';
@@ -35,26 +44,18 @@ export class QuickOrderService implements QuickOrderFacade, OnDestroy {
   >([]);
   protected softDeletedEntries$: BehaviorSubject<Record<string, OrderEntry>> =
     new BehaviorSubject<Record<string, OrderEntry>>({});
-  protected hardDeleteTimeout = 5000;
-
-  private clearDeleteTimeouts: Record<string, Subscription> = {};
-
-  /**
-   * @deprecated since version 4.2
-   * Use constructor(activeCartService: ActiveCartService, productAdapter: ProductAdapter, eventService: EventService, productSearchAdapter: ProductSearchAdapter); instead
-   */
-  // TODO(#14059): Remove deprecated constructor
-  constructor(
-    activeCartService: ActiveCartService,
-    productAdapter: ProductAdapter,
-    eventService: EventService
-  );
+  protected nonPurchasableProductError$: BehaviorSubject<Product | null> =
+    new BehaviorSubject<Product | null>(null);
+  protected hardDeleteTimeout =
+    this.config.quickOrder?.list?.hardDeleteTimeout || 7000;
+  protected quickOrderListLimit = 0;
+  protected clearDeleteTimeouts: Record<string, Subscription> = {};
 
   constructor(
-    protected activeCartService: ActiveCartService,
-    protected productAdapter: ProductAdapter, // TODO(#14059): Remove this service
+    protected activeCartService: ActiveCartFacade,
+    protected config: Config,
     protected eventService: EventService,
-    protected productSearchAdapter?: ProductSearchAdapter //TODO(#14059): Make it required
+    protected productSearchConnector: ProductSearchConnector
   ) {}
 
   ngOnDestroy(): void {
@@ -69,25 +70,17 @@ export class QuickOrderService implements QuickOrderFacade, OnDestroy {
   }
 
   /**
-   * @deprecated since 4.2 - use searchProducts instead
-   * Search product using SKU
-   */
-  search(productCode: string): Observable<Product> {
-    return this.productAdapter.load(productCode);
-  }
-
-  /**
    * Search products using query
    */
   searchProducts(query: string, maxProducts?: number): Observable<Product[]> {
     // TODO(#14059): Remove condition
-    if (this.productSearchAdapter) {
+    if (this.productSearchConnector) {
       const searchConfig: SearchConfig = {
         pageSize:
           maxProducts ||
           defaultQuickOrderConfig.quickOrder?.searchForm?.maxProducts,
       };
-      return this.productSearchAdapter
+      return this.productSearchConnector
         .search(query, searchConfig)
         .pipe(
           map((searchPage: ProductSearchPage) => searchPage.products || [])
@@ -102,6 +95,29 @@ export class QuickOrderService implements QuickOrderFacade, OnDestroy {
    */
   clearList(): void {
     this.entries$.next([]);
+  }
+
+  /**
+   * Get information about the possibility to add the next product
+   */
+  canAdd(code?: string, productData?: ProductData[]): Observable<boolean> {
+    if (code && productData) {
+      return of(
+        this.isProductOnTheList(code) ||
+          !this.isLimitExceeded(code, productData)
+      );
+    } else if (code) {
+      return of(this.isProductOnTheList(code) || !this.isLimitExceeded());
+    } else {
+      return of(!this.isLimitExceeded());
+    }
+  }
+
+  /**
+   * Set quick order list limit property
+   */
+  setListLimit(limit: number): void {
+    this.quickOrderListLimit = limit;
   }
 
   /**
@@ -131,13 +147,6 @@ export class QuickOrderService implements QuickOrderFacade, OnDestroy {
       entriesList.splice(index, 1);
       this.entries$.next(entriesList);
     });
-  }
-
-  /**
-   * @deprecated since 4.2 - use softDeleteEntry instead
-   */
-  removeEntry(index: number): void {
-    this.softDeleteEntry(index);
   }
 
   /**
@@ -248,6 +257,27 @@ export class QuickOrderService implements QuickOrderFacade, OnDestroy {
   }
 
   /**
+   *  Return non purchasable product error
+   */
+  getNonPurchasableProductError(): Observable<Product | null> {
+    return this.nonPurchasableProductError$;
+  }
+
+  /**
+   * Set error that selected product is not purchasable
+   */
+  setNonPurchasableProductError(product: Product): void {
+    this.nonPurchasableProductError$.next(product);
+  }
+
+  /**
+   * Clear not purchasable product error
+   */
+  clearNonPurchasableProductError(): void {
+    this.nonPurchasableProductError$.next(null);
+  }
+
+  /**
    * Add soft deleted entry to the cached list
    */
   protected addSoftEntryDeletion(
@@ -255,7 +285,7 @@ export class QuickOrderService implements QuickOrderFacade, OnDestroy {
     clearTimeout: boolean = true
   ): void {
     const deletedEntries = this.softDeletedEntries$.getValue();
-    const productCode = entry.product?.code;
+    const productCode = entry?.product?.code;
 
     if (productCode) {
       deletedEntries[productCode] = entry;
@@ -292,7 +322,7 @@ export class QuickOrderService implements QuickOrderFacade, OnDestroy {
   ): OrderEntry {
     return {
       basePrice: product.price,
-      product: product,
+      product,
       quantity,
       totalPrice: product.price,
     } as OrderEntry;
@@ -302,6 +332,14 @@ export class QuickOrderService implements QuickOrderFacade, OnDestroy {
    * Add single entry to the list
    */
   protected addEntry(entry: OrderEntry): void {
+    if (
+      entry?.product?.code &&
+      !this.isProductOnTheList(entry.product.code) &&
+      this.isLimitExceeded()
+    ) {
+      return;
+    }
+
     const entries = this.entries$.getValue() || [];
     const entryStockLevel = entry.product?.stock?.stockLevel;
 
@@ -313,11 +351,11 @@ export class QuickOrderService implements QuickOrderFacade, OnDestroy {
       const entryIndex = entries.findIndex(
         (item: OrderEntry) => item.product?.code === entry.product?.code
       );
-      let quantity = entries[entryIndex].quantity;
+      const quantity = entries[entryIndex].quantity;
 
       if (quantity && entry.quantity) {
         entries[entryIndex].quantity = quantity + entry?.quantity;
-        let newQuantity = entries[entryIndex].quantity;
+        const newQuantity = entries[entryIndex].quantity;
 
         if (newQuantity && entryStockLevel && newQuantity > entryStockLevel) {
           entries[entryIndex].quantity = entryStockLevel;
@@ -341,6 +379,46 @@ export class QuickOrderService implements QuickOrderFacade, OnDestroy {
     return !!entries.find(
       (item: OrderEntry) => item.product?.code === productCode
     );
+  }
+
+  protected isLimitExceeded(
+    code?: string,
+    productsData?: ProductData[]
+  ): boolean {
+    const entries = this.entries$.getValue() || [];
+
+    /**
+     * Used to offset the amount of existing entries with the index of the missing
+     * entry to be added. We can use this offset to see if adding the missing product
+     * would hit the list limit before we attempt to add it.
+     */
+    const missingProductIndex =
+      code && productsData
+        ? this.getMissingProductIndex(entries, code, productsData)
+        : 0;
+
+    return (
+      entries.length + (missingProductIndex || 0) >= this.quickOrderListLimit
+    );
+  }
+
+  /**
+   * Get the index of the missing product in the productsData array identified by code
+   * from the entries array.
+   */
+  protected getMissingProductIndex(
+    entries: OrderEntry[],
+    code: string,
+    productsData: ProductData[]
+  ) {
+    const missingProducts =
+      productsData?.filter(
+        (product) =>
+          !entries
+            .map((entry) => entry.product?.code)
+            .includes(product.productCode)
+      ) || [];
+    return missingProducts.findIndex((product) => product.productCode === code);
   }
 
   private createQuickOrderResultEvent(

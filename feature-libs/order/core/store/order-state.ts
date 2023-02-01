@@ -1,14 +1,19 @@
+/*
+ * SPDX-FileCopyrightText: 2023 SAP Spartacus team <spartacus-team@sap.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { StateUtils } from '@spartacus/core';
 import {
+  ConsignmentTracking,
   Order,
   OrderHistoryList,
   ReplenishmentOrder,
   ReplenishmentOrderList,
   ReturnRequest,
   ReturnRequestList,
-  StateUtils,
-} from '@spartacus/core';
-import { ConsignmentTracking } from '@spartacus/order/root';
-
+} from '@spartacus/order/root';
 export const ORDER_FEATURE = 'order';
 
 export const CANCEL_ORDER_PROCESS_ID = 'cancelOrder';

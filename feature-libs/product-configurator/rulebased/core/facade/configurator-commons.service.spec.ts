@@ -2,7 +2,8 @@ import { Type } from '@angular/core';
 import { TestBed, waitForAsync } from '@angular/core/testing';
 import * as ngrxStore from '@ngrx/store';
 import { Store, StoreModule } from '@ngrx/store';
-import { ActiveCartService, Cart, StateUtils } from '@spartacus/core';
+import { ActiveCartFacade, Cart } from '@spartacus/cart/base/root';
+import { StateUtils } from '@spartacus/core';
 import {
   CommonConfigurator,
   CommonConfiguratorUtilsService,
@@ -30,6 +31,7 @@ let OWNER_CART_ENTRY = ConfiguratorModelUtils.createInitialOwner();
 let OWNER_ORDER_ENTRY = ConfiguratorModelUtils.createInitialOwner();
 
 const CONFIG_ID = '1234-56-7890';
+const CONFIG_ID_TEMPLATE = '1234-56-78aa';
 const GROUP_ID_1 = '123ab';
 const GROUP_ID_2 = '1234-56-7892';
 
@@ -70,11 +72,6 @@ let productConfiguration: Configurator.Configuration = {
   ...ConfiguratorTestUtils.createConfiguration(CONFIG_ID),
 };
 
-const productConfigurationProductBoundObsolete: Configurator.Configuration = {
-  ...ConfiguratorTestUtils.createConfiguration(CONFIG_ID, OWNER_PRODUCT),
-  nextOwner: OWNER_CART_ENTRY,
-};
-
 const productConfigurationChanged: Configurator.Configuration = {
   ...ConfiguratorTestUtils.createConfiguration(CONFIG_ID),
 };
@@ -102,13 +99,13 @@ class MockconfiguratorUtilsService {
     return productConfiguration;
   }
   isConfigurationCreated(configuration: Configurator.Configuration): boolean {
-    const configId: String = configuration?.configId;
+    const configId: String = configuration.configId;
     return configId !== undefined && configId.length !== 0;
   }
   getConfigurationFromState(
-    configurationState: StateUtils.ProcessesLoaderState<Configurator.Configuration>
+    configurationLoaderState: StateUtils.ProcessesLoaderState<Configurator.Configuration>
   ): Configurator.Configuration | undefined {
-    return configurationState.value;
+    return configurationLoaderState.value;
   }
 }
 
@@ -168,7 +165,7 @@ describe('ConfiguratorCommonsService', () => {
             useClass: MockConfiguratorCartService,
           },
           {
-            provide: ActiveCartService,
+            provide: ActiveCartFacade,
             useClass: MockActiveCartService,
           },
           {
@@ -246,7 +243,7 @@ describe('ConfiguratorCommonsService', () => {
   it('should get pending changes from store', () => {
     spyOnProperty(ngrxStore, 'select').and.returnValue(() => () => of(true));
 
-    let hasPendingChanges = null;
+    let hasPendingChanges = false;
     serviceUnderTest
       .hasPendingChanges(OWNER_PRODUCT)
       .subscribe((pendingChanges) => {
@@ -261,7 +258,7 @@ describe('ConfiguratorCommonsService', () => {
         of(configurationState.configurations.entities[OWNER_PRODUCT.key])
     );
 
-    let isLoading = null;
+    let isLoading = false;
     serviceUnderTest
       .isConfigurationLoading(OWNER_PRODUCT)
       .subscribe((loading) => {
@@ -374,6 +371,7 @@ describe('ConfiguratorCommonsService', () => {
       spyOn(store, 'dispatch').and.callThrough();
       serviceUnderTest
         .getConfigurationWithOverview(productConfiguration)
+
         .subscribe(() => {
           expect(store.dispatch).toHaveBeenCalledWith(
             new ConfiguratorActions.GetConfigurationOverview(
@@ -391,7 +389,7 @@ describe('ConfiguratorCommonsService', () => {
           CONFIG_ID,
           ConfiguratorModelUtils.createInitialOwner()
         ),
-        overview: { configId: CONFIG_ID },
+        overview: { configId: CONFIG_ID, productCode: PRODUCT_CODE },
       };
       spyOnProperty(ngrxStore, 'select').and.returnValue(
         () => () => of(configurationWithOverview)
@@ -404,6 +402,18 @@ describe('ConfiguratorCommonsService', () => {
           done();
         })
         .unsubscribe();
+    });
+  });
+
+  describe('updateConfigurationOverview', () => {
+    it('should fire the corresponding action', () => {
+      spyOn(store, 'dispatch').and.callThrough();
+      serviceUnderTest.updateConfigurationOverview(productConfiguration);
+      expect(store.dispatch).toHaveBeenCalledWith(
+        new ConfiguratorActions.UpdateConfigurationOverview(
+          productConfiguration
+        )
+      );
     });
   });
 
@@ -435,7 +445,6 @@ describe('ConfiguratorCommonsService', () => {
       const configurationObs = serviceUnderTest.getConfiguration(
         productConfiguration.owner
       );
-
       expect(configurationObs).toBeObservable(
         cold('x-|', {
           x: productConfiguration,
@@ -495,10 +504,37 @@ describe('ConfiguratorCommonsService', () => {
 
       const configurationObs =
         serviceUnderTest.getOrCreateConfiguration(OWNER_PRODUCT);
-
       expect(configurationObs).toBeObservable(cold('', {}));
       expect(store.dispatch).toHaveBeenCalledWith(
-        new ConfiguratorActions.CreateConfiguration(OWNER_PRODUCT)
+        new ConfiguratorActions.CreateConfiguration({
+          owner: OWNER_PRODUCT,
+          configIdTemplate: undefined,
+        })
+      );
+    });
+
+    it('should hand over configuration ID template to action', () => {
+      const productConfigurationLoaderState: StateUtils.LoaderState<Configurator.Configuration> =
+        {
+          loading: false,
+        };
+
+      const obs = cold('x', {
+        x: productConfigurationLoaderState,
+      });
+      spyOnProperty(ngrxStore, 'select').and.returnValue(() => () => obs);
+      spyOn(store, 'dispatch').and.callThrough();
+
+      const configurationObs = serviceUnderTest.getOrCreateConfiguration(
+        OWNER_PRODUCT,
+        CONFIG_ID_TEMPLATE
+      );
+      expect(configurationObs).toBeObservable(cold('', {}));
+      expect(store.dispatch).toHaveBeenCalledWith(
+        new ConfiguratorActions.CreateConfiguration({
+          owner: OWNER_PRODUCT,
+          configIdTemplate: CONFIG_ID_TEMPLATE,
+        })
       );
     });
 
@@ -516,7 +552,6 @@ describe('ConfiguratorCommonsService', () => {
 
       const configurationObs =
         serviceUnderTest.getOrCreateConfiguration(OWNER_PRODUCT);
-
       expect(configurationObs).toBeObservable(cold('', {}));
       expect(store.dispatch).toHaveBeenCalledTimes(0);
     });
@@ -536,7 +571,6 @@ describe('ConfiguratorCommonsService', () => {
 
       const configurationObs =
         serviceUnderTest.getOrCreateConfiguration(OWNER_PRODUCT);
-
       expect(configurationObs).toBeObservable(cold('', {}));
       expect(store.dispatch).toHaveBeenCalledTimes(0);
     });
@@ -572,27 +606,13 @@ describe('ConfiguratorCommonsService', () => {
     });
   });
 
-  describe('removeObsoleteProductBoundConfiguration', () => {
-    it('should not dispatch any action if the configuration does not carry a next owner', () => {
+  describe('removeProductBoundConfigurations', () => {
+    it('should call matching action on removeProductBoundConfigurations', () => {
       spyOn(store, 'dispatch').and.callThrough();
-      spyOnProperty(ngrxStore, 'select').and.returnValue(
-        () => () => of(productConfiguration)
+      serviceUnderTest.removeProductBoundConfigurations();
+      expect(store.dispatch).toHaveBeenCalledWith(
+        new ConfiguratorActions.RemoveProductBoundConfigurations()
       );
-      serviceUnderTest['removeObsoleteProductBoundConfiguration'](
-        OWNER_PRODUCT
-      );
-      expect(store.dispatch).toHaveBeenCalledTimes(0);
-    });
-
-    it('should dispatch the remove action if the configuration carries a next owner', () => {
-      spyOn(store, 'dispatch').and.callThrough();
-      spyOnProperty(ngrxStore, 'select').and.returnValue(
-        () => () => of(productConfigurationProductBoundObsolete)
-      );
-      serviceUnderTest['removeObsoleteProductBoundConfiguration'](
-        OWNER_PRODUCT
-      );
-      expect(store.dispatch).toHaveBeenCalledTimes(1);
     });
   });
 });
